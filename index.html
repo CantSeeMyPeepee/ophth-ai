@@ -5,24 +5,16 @@
 <title>Mainland Eye AI</title>
 
 <style>
-body {
-  font-family:-apple-system;
-  margin:0;
-  background:#0f1115;
-  color:#e5e7eb;
-}
+body { font-family:-apple-system; margin:0; background:#0f1115; color:#e5e7eb; }
 
-/* 🔥 HEADER */
 .header {
   position:sticky;
   top:0;
   background:#1a1d23;
   padding:16px;
   text-align:center;
-  font-size:18px;
   font-weight:600;
   border-bottom:1px solid #2a2f38;
-  z-index:1000;
 }
 
 .container { padding:14px; }
@@ -33,7 +25,6 @@ body {
   border-radius:16px;
   margin-bottom:12px;
   text-align:center;
-  font-size:18px;
 }
 
 button {
@@ -56,32 +47,22 @@ input {
 }
 
 .hidden { display:none; }
-.step { display:none; }
-.active { display:block; }
 
-pre {
-  background:#111318;
-  padding:10px;
-  border-radius:10px;
-  white-space:pre-wrap;
-}
-
-.med-card {
+.disease-card {
   background:#1a1d23;
   padding:14px;
   border-radius:12px;
   margin-bottom:10px;
   text-align:left;
-  font-size:14px;
 }
-.med-title { font-weight:600; }
-.med-section { color:#9ca3af; margin-top:4px; }
+
+.disease-title { font-weight:600; }
+.disease-section { color:#9ca3af; margin-top:4px; }
 </style>
 </head>
 
 <body>
 
-<!-- 🔥 GLOBAL HEADER -->
 <div class="header">Mainland Eye AI</div>
 
 <div class="container">
@@ -94,28 +75,22 @@ pre {
 <div class="card" onclick="show('research')">🔬 Research</div>
 </div>
 
-<!-- AI -->
-<div id="ai" class="hidden">
-<button onclick="show('home')">← Back</button>
-<input id="ai_input" placeholder="Describe case...">
-<button onclick="runAI()">Analyze</button>
-<pre id="ai_out"></pre>
-</div>
-
 <!-- RESEARCH -->
 <div id="research" class="hidden">
 <button onclick="show('home')">← Back</button>
+
 <div class="card" onclick="show('meds')">💊 Meds</div>
+<div class="card" onclick="show('diseases')">👁️ Diseases</div>
 <div class="card" onclick="show('oct')">🧠 OCT</div>
 </div>
 
-<!-- MEDS -->
-<div id="meds" class="hidden">
+<!-- DISEASES -->
+<div id="diseases" class="hidden">
 <button onclick="show('research')">← Back</button>
 
-<input id="medSearch" placeholder="Search meds..." oninput="renderMeds()">
+<input id="diseaseSearch" placeholder="Search diseases..." oninput="renderDiseases()">
 
-<div id="medList"></div>
+<div id="diseaseList"></div>
 </div>
 
 <!-- OCT -->
@@ -131,21 +106,10 @@ pre {
 <script>
 
 // NAV
-function show(page){
- document.querySelectorAll("#home,#ai,#exam,#patients,#research,#meds,#oct")
- .forEach(p=>p.classList.add("hidden"));
- document.getElementById(page).classList.remove("hidden");
-}
-
-// AI
-async function runAI(){
- let res = await fetch("https://ophth-ai.onrender.com/ai",{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({cc:ai_input.value})
- });
- let data = await res.json();
- ai_out.innerText = data.result;
+function show(p){
+ document.querySelectorAll("#home,#research,#meds,#diseases,#oct,#ai,#exam,#patients")
+ .forEach(x=>x.classList.add("hidden"));
+ document.getElementById(p).classList.remove("hidden");
 }
 
 // OCT LINKS
@@ -155,27 +119,96 @@ function openLink(type){
  if(type==="articles") window.open("https://app.octcases.com/articles","_blank");
 }
 
-// MEDS
-let meds = [
-{name:"Latanoprost",dose:"qhs",use:"glaucoma"},
-{name:"Timolol",dose:"BID",use:"glaucoma"},
-{name:"Moxifloxacin",dose:"QID",use:"infection"}
-];
+// DISEASE DATABASE
+let diseases = [
 
-function renderMeds(){
- let q = medSearch.value.toLowerCase();
- medList.innerHTML = meds
-   .filter(m=>m.name.toLowerCase().includes(q))
-   .map(m=>`
-     <div class="med-card">
-       <div class="med-title">${m.name}</div>
-       Dose: ${m.dose}<br>
-       Use: ${m.use}
-     </div>
-   `).join("");
+{
+name:"Glaucoma",
+type:"Ocular",
+desc:"Progressive optic neuropathy with elevated IOP",
+signs:"High IOP, cupping, RNFL loss",
+testing:"OCT RNFL, HVF, pachymetry",
+treatment:"Drops, laser, surgery"
+},
+
+{
+name:"Macular Degeneration",
+type:"Ocular",
+desc:"Degeneration of macula affecting central vision",
+signs:"Drusen, distortion",
+testing:"Macular OCT",
+treatment:"AREDS, anti-VEGF"
+},
+
+{
+name:"Retinal Detachment",
+type:"Ocular",
+desc:"Separation of retina from underlying tissue",
+signs:"Flashes, floaters, curtain",
+testing:"Dilated exam, OCT",
+treatment:"Emergency referral"
+},
+
+{
+name:"Uveitis",
+type:"Ocular",
+desc:"Inflammation of uveal tract",
+signs:"Pain, photophobia",
+testing:"Slit lamp",
+treatment:"Steroids"
+},
+
+{
+name:"Diabetes",
+type:"Systemic",
+desc:"Affects retinal vasculature",
+signs:"Microaneurysms, edema",
+testing:"OCT, fundus photo",
+treatment:"Anti-VEGF, control A1C"
+},
+
+{
+name:"Hypertension",
+type:"Systemic",
+desc:"Causes retinal vascular changes",
+signs:"AV nicking, hemorrhages",
+testing:"Fundus exam",
+treatment:"BP control"
+},
+
+{
+name:"Autoimmune Disease",
+type:"Systemic",
+desc:"Can cause uveitis, dry eye",
+signs:"Inflammation",
+testing:"Labs, slit lamp",
+treatment:"Steroids, immunosuppression"
 }
 
-renderMeds();
+];
+
+// RENDER
+function renderDiseases(){
+
+ let q = diseaseSearch.value.toLowerCase();
+
+ let list = diseases.filter(d =>
+   d.name.toLowerCase().includes(q)
+ );
+
+ diseaseList.innerHTML = list.map(d=>`
+<div class="disease-card">
+<div class="disease-title">${d.name} (${d.type})</div>
+<div class="disease-section">Description: ${d.desc}</div>
+<div class="disease-section">Signs: ${d.signs}</div>
+<div class="disease-section">Testing: ${d.testing}</div>
+<div class="disease-section">Treatment: ${d.treatment}</div>
+</div>
+`).join("");
+}
+
+// INIT
+renderDiseases();
 
 </script>
 
