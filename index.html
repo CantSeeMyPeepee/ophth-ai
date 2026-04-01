@@ -7,6 +7,7 @@
 <style>
 body { font-family:-apple-system; margin:0; background:#0f1115; color:#e5e7eb; }
 .container { padding:14px; }
+
 .step { display:none; }
 .active { display:block; }
 
@@ -40,8 +41,9 @@ input {
 
 pre {
   background:#111318;
-  padding:10px;
+  padding:12px;
   border-radius:10px;
+  white-space:pre-wrap;
 }
 </style>
 </head>
@@ -50,98 +52,84 @@ pre {
 
 <div class="container">
 
-<!-- STEP 1 CC -->
+<!-- STEP 1 -->
 <div id="step1" class="step active">
 <div class="card">
 <h3>Chief Complaint</h3>
-
 <div class="row">
 <button onclick="setCC('blurred vision')">Blur</button>
 <button onclick="setCC('pain')">Pain</button>
 <button onclick="setCC('floaters')">Floaters</button>
 </div>
-
 <input id="cc">
 <button onclick="next(2)">Next →</button>
 </div>
 </div>
 
-<!-- STEP 2 IOP -->
+<!-- STEP 2 -->
 <div id="step2" class="step">
 <div class="card">
 <h3>IOP</h3>
-
 <div class="row">
 <button onclick="setIOP('od',15)">OD 15</button>
 <button onclick="setIOP('od',25)">OD 25</button>
 <button onclick="setIOP('os',15)">OS 15</button>
 <button onclick="setIOP('os',25)">OS 25</button>
 </div>
-
 <input id="iop_od" placeholder="OD">
 <input id="iop_os" placeholder="OS">
-
 <button onclick="next(3)">Next →</button>
 </div>
 </div>
 
-<!-- STEP 3 VA -->
+<!-- STEP 3 -->
 <div id="step3" class="step">
 <div class="card">
 <h3>Visual Acuity</h3>
-
 <div class="row">
 <button onclick="setVA('od','20/20')">OD 20/20</button>
 <button onclick="setVA('od','20/40')">OD 20/40</button>
 <button onclick="setVA('os','20/20')">OS 20/20</button>
 <button onclick="setVA('os','20/40')">OS 20/40</button>
 </div>
-
 <input id="va_od" placeholder="OD">
 <input id="va_os" placeholder="OS">
-
 <button onclick="next(4)">Next →</button>
 </div>
 </div>
 
-<!-- STEP 4 SLIT LAMP -->
+<!-- STEP 4 -->
 <div id="step4" class="step">
 <div class="card">
 <h3>Slit Lamp</h3>
-
 <div class="row">
 <button onclick="setSL('normal')">Normal</button>
 <button onclick="setSL('dry eye')">Dry Eye</button>
 <button onclick="setSL('inflammation')">Inflammation</button>
 </div>
-
 <input id="slitlamp">
 <button onclick="next(5)">Next →</button>
 </div>
 </div>
 
-<!-- STEP 5 DILATION -->
+<!-- STEP 5 -->
 <div id="step5" class="step">
 <div class="card">
-<h3>Dilation Decision</h3>
-
+<h3>Dilation</h3>
 <div class="row">
-<button onclick="setDil('yes')">Dilated</button>
-<button onclick="setDil('no')">Not Dilated</button>
+<button onclick="setDil('Dilated')">Dilated</button>
+<button onclick="setDil('Not Dilated')">Not Dilated</button>
 </div>
-
 <button onclick="next(6)">Next →</button>
 </div>
 </div>
 
-<!-- STEP 6 TESTING -->
+<!-- STEP 6 -->
 <div id="step6" class="step">
 <div class="card">
-<h3>Recommended Testing</h3>
-
+<h3>Testing</h3>
 <div id="testing"></div>
-
-<button onclick="analyze()">Analyze</button>
+<button onclick="analyze()">Generate Plan</button>
 </div>
 </div>
 
@@ -158,49 +146,38 @@ function next(n){
  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
  document.getElementById("step"+n).classList.add('active');
 
- if(n===6) runTestingLogic();
+ if(n===6) runTesting();
 }
 
 // SETTERS
 function setCC(v){ cc.value=v; }
-function setIOP(eye,val){ eye==='od'?iop_od.value=val:iop_os.value=val; }
-function setVA(eye,val){ eye==='od'?va_od.value=val:va_os.value=val; }
+function setIOP(e,v){ e==='od'?iop_od.value=v:iop_os.value=v; }
+function setVA(e,v){ e==='od'?va_od.value=v:va_os.value=v; }
 function setSL(v){ slitlamp.value=v; }
-function setDil(v){ window.dilated=v; }
+function setDil(v){ window.dil=v; }
 
-// 🧠 TESTING LOGIC
-function runTestingLogic(){
+// TEST LOGIC
+function runTesting(){
 
- let tests = [];
+ let t=[];
 
- let iopOD = parseInt(iop_od.value);
- let iopOS = parseInt(iop_os.value);
-
- if(iopOD>22 || iopOS>22){
-   tests.push("OCT RNFL");
-   tests.push("Visual Field");
-   tests.push("Pachymetry");
+ if(iop_od.value>22 || iop_os.value>22){
+   t.push("OCT RNFL");
+   t.push("Visual Field");
+   t.push("Pachymetry");
  }
 
- if(cc.value.includes("blur")){
-   tests.push("Macular OCT");
- }
+ if(cc.value.includes("blur")) t.push("Macular OCT");
+ if(cc.value.includes("floaters")) t.push("Fundus Photo");
 
- if(cc.value.includes("floaters")){
-   tests.push("Fundus Photo");
- }
-
- if(slitlamp.value.includes("dry")){
-   tests.push("Tear Film / Dry Eye Testing");
- }
-
- testing.innerHTML = tests.map(t=>`<div>• ${t}</div>`).join("");
+ testing.innerHTML=t.map(x=>`• ${x}`).join("<br>");
+ window.tests=t;
 }
 
-// AI
+// SOAP GENERATION
 async function analyze(){
 
- let res = await fetch(API+"/ai",{
+ let res=await fetch(API+"/ai",{
    method:"POST",
    headers:{"Content-Type":"application/json"},
    body:JSON.stringify({
@@ -213,9 +190,28 @@ async function analyze(){
    })
  });
 
- let data = await res.json();
+ let data=await res.json();
 
- out.innerText = data.result;
+ let soap = `
+S: ${cc.value}
+
+O:
+VA OD: ${va_od.value}
+VA OS: ${va_os.value}
+IOP OD: ${iop_od.value}
+IOP OS: ${iop_os.value}
+Slit Lamp: ${slitlamp.value}
+Dilation: ${window.dil}
+
+A:
+${data.result}
+
+P:
+Testing: ${tests.join(", ")}
+Follow up based on findings
+`;
+
+ out.innerText = soap;
 }
 
 </script>
