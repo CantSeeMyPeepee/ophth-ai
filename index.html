@@ -13,8 +13,42 @@
 <link rel="apple-touch-icon" href="/icon.png">
 
 <style>
-body { font-family:-apple-system; margin:0; background:#0f1115; color:#e5e7eb; }
 
+/* BASE */
+body {
+  font-family:-apple-system;
+  margin:0;
+  background:#0f1115;
+  color:#e5e7eb;
+}
+
+/* SPLASH */
+#splash {
+  position:fixed;
+  width:100%;
+  height:100%;
+  background:#0f1115;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  z-index:9999;
+  transition:opacity 0.4s ease;
+}
+
+.splash-logo {
+  width:100px;
+  height:100px;
+  border-radius:24px;
+  margin-bottom:12px;
+}
+
+.splash-text {
+  font-size:18px;
+  color:#9ca3af;
+}
+
+/* APP */
 .header {
   background:#1a1d23;
   padding:16px;
@@ -61,12 +95,17 @@ button:active {
 
 .back { background:#1f232a; }
 
-.row { display:flex; flex-wrap:wrap; gap:6px; }
+.row {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
 .quick { flex:1; min-width:60px; }
 
 .hidden { display:none; }
 
-/* INSTALL POPUP */
+/* INSTALL */
 .install-banner {
   position:fixed;
   bottom:20px;
@@ -82,26 +121,6 @@ button:active {
   display:none;
 }
 
-.install-title {
-  font-weight:600;
-  margin-bottom:6px;
-}
-
-.install-text {
-  font-size:14px;
-  color:#9ca3af;
-  margin-bottom:10px;
-}
-
-.install-actions {
-  display:flex;
-  gap:6px;
-}
-
-.install-actions button {
-  flex:1;
-}
-
 /* OUTPUT */
 pre {
   background:#111318;
@@ -114,6 +133,12 @@ pre {
 </head>
 
 <body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <img src="/icon.png" class="splash-logo">
+  <div class="splash-text">Mainland Eye AI</div>
+</div>
 
 <div class="header">Mainland Eye AI</div>
 
@@ -132,7 +157,7 @@ pre {
 <button class="back" onclick="show('home')">← Back</button>
 
 <div class="card">
-<b id="patientHeader">No patient</b>
+<b>No patient</b>
 </div>
 
 <div class="card">
@@ -172,77 +197,57 @@ pre {
 
 </div>
 
-<!-- INSTALL BANNER -->
+<!-- INSTALL -->
 <div id="installBanner" class="install-banner">
-  <div class="install-title">Install Mainland Eye</div>
-  <div class="install-text">Tap Share → Add to Home Screen</div>
-  <div class="install-actions">
-    <button onclick="closeInstall()">Later</button>
-    <button onclick="showInstallHelp()">How</button>
-  </div>
+  Install Mainland Eye → Share → Add to Home Screen
 </div>
 
 <script>
 
-// DEVICE DETECTION
-function isIphone(){
-  return /iphone/i.test(navigator.userAgent);
-}
+/* SPLASH FADE */
+window.onload = () => {
+  setTimeout(()=>{
+    splash.style.opacity = "0";
+    setTimeout(()=> splash.style.display="none", 400);
+  }, 1200);
+};
 
-function isSafari(){
-  return /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent);
-}
+/* INSTALL LOGIC */
+function isIphone(){ return /iphone/i.test(navigator.userAgent); }
+function isSafari(){ return /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent); }
+function isStandalone(){ return window.navigator.standalone === true; }
 
-function isStandalone(){
-  return window.navigator.standalone === true;
-}
+setTimeout(()=>{
+ if(isIphone() && isSafari() && !isStandalone()){
+   installBanner.style.display="block";
+ }
+},2000);
 
-// SHOW INSTALL ONLY WHEN APPROPRIATE
-setTimeout(() => {
-  if (isIphone() && isSafari() && !isStandalone()) {
-    installBanner.style.display = "block";
-  }
-}, 1500);
-
-// CLOSE
-function closeInstall(){
-  installBanner.style.display = "none";
-}
-
-// HELP
-function showInstallHelp(){
-  alert("Tap the Share button → Add to Home Screen");
-}
-
-// NAV
+/* NAV */
 function show(p){
  document.querySelectorAll("#home,#ai,#patients,#research")
  .forEach(d=>d.classList.add("hidden"));
  document.getElementById(p).classList.remove("hidden");
 }
 
-// QUICK SET
+/* QUICK */
 function setCC(v){ cc.value=v; }
 function setVA(v){ va.value=v; }
 function setIOP(v){ iop.value=v; }
 
-// VOICE
+/* VOICE */
 function voice(){
  let R=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
  R.onresult=e=>cc.value=e.results[0][0].transcript;
  R.start();
 }
 
-// AI
+/* AI */
 async function analyze(){
  let res=await fetch("https://ophth-ai.onrender.com/ai",{
    method:"POST",
    headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({
-     cc:cc.value,
-     va:va.value,
-     iop:iop.value
-   })
+   body:JSON.stringify({cc:cc.value,va:va.value,iop:iop.value})
  });
  let data=await res.json();
  out.innerText=data.result;
