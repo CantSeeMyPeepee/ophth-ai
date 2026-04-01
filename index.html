@@ -5,7 +5,26 @@
 <title>Mainland Eye AI</title>
 
 <style>
-body { font-family:-apple-system; margin:0; background:#0f1115; color:#e5e7eb; }
+body {
+  font-family:-apple-system;
+  margin:0;
+  background:#0f1115;
+  color:#e5e7eb;
+}
+
+/* 🔥 HEADER */
+.header {
+  position:sticky;
+  top:0;
+  background:#1a1d23;
+  padding:16px;
+  text-align:center;
+  font-size:18px;
+  font-weight:600;
+  border-bottom:1px solid #2a2f38;
+  z-index:1000;
+}
+
 .container { padding:14px; }
 
 .card {
@@ -46,10 +65,24 @@ pre {
   border-radius:10px;
   white-space:pre-wrap;
 }
+
+.med-card {
+  background:#1a1d23;
+  padding:14px;
+  border-radius:12px;
+  margin-bottom:10px;
+  text-align:left;
+  font-size:14px;
+}
+.med-title { font-weight:600; }
+.med-section { color:#9ca3af; margin-top:4px; }
 </style>
 </head>
 
 <body>
+
+<!-- 🔥 GLOBAL HEADER -->
+<div class="header">Mainland Eye AI</div>
 
 <div class="container">
 
@@ -61,135 +94,52 @@ pre {
 <div class="card" onclick="show('research')">🔬 Research</div>
 </div>
 
-<!-- AI MODE -->
+<!-- AI -->
 <div id="ai" class="hidden">
 <button onclick="show('home')">← Back</button>
-
 <input id="ai_input" placeholder="Describe case...">
 <button onclick="runAI()">Analyze</button>
-
 <pre id="ai_out"></pre>
-</div>
-
-<!-- EXAM -->
-<div id="exam" class="hidden">
-
-<button onclick="show('home')">← Back</button>
-
-<div class="card">
-<b id="patientHeader">No Patient Selected</b>
-</div>
-
-<div id="step1" class="step active">
-<input id="cc" placeholder="Chief Complaint">
-<button onclick="next(2)">Next</button>
-</div>
-
-<div id="step2" class="step">
-<input id="iop_od" placeholder="IOP OD">
-<input id="iop_os" placeholder="IOP OS">
-<button onclick="next(3)">Next</button>
-</div>
-
-<div id="step3" class="step">
-<input id="va_od" placeholder="VA OD">
-<input id="va_os" placeholder="VA OS">
-<button onclick="next(4)">Next</button>
-</div>
-
-<div id="step4" class="step">
-<input id="slitlamp" placeholder="Slit Lamp">
-<button onclick="next(5)">Next</button>
-</div>
-
-<div id="step5" class="step">
-<button onclick="setDil('Dilated')">Dilated</button>
-<button onclick="setDil('Not Dilated')">Not Dilated</button>
-<button onclick="next(6)">Next</button>
-</div>
-
-<div id="step6" class="step">
-<div id="testing"></div>
-<button onclick="analyze()">Generate Plan</button>
-</div>
-
-<div class="card">
-<b>History</b>
-<div id="history"></div>
-</div>
-
-<pre id="exam_out"></pre>
-
-</div>
-
-<!-- PATIENTS -->
-<div id="patients" class="hidden">
-
-<button onclick="show('home')">← Back</button>
-
-<h3>Search</h3>
-<input id="search" placeholder="Name..." oninput="searchPatients()">
-<div id="results"></div>
-
-<h3>Add Patient</h3>
-<input id="last" placeholder="Last Name">
-<input id="first" placeholder="First Name">
-<input id="dob" placeholder="DOB">
-
-<button onclick="savePatient()">Save Patient</button>
-
 </div>
 
 <!-- RESEARCH -->
 <div id="research" class="hidden">
-
 <button onclick="show('home')">← Back</button>
-
 <div class="card" onclick="show('meds')">💊 Meds</div>
-<div class="card" onclick="show('diseases')">👁️ Diseases</div>
 <div class="card" onclick="show('oct')">🧠 OCT</div>
-
 </div>
 
+<!-- MEDS -->
 <div id="meds" class="hidden">
 <button onclick="show('research')">← Back</button>
-<p>Medication database coming next</p>
+
+<input id="medSearch" placeholder="Search meds..." oninput="renderMeds()">
+
+<div id="medList"></div>
 </div>
 
-<div id="diseases" class="hidden">
-<button onclick="show('research')">← Back</button>
-<p>Disease database coming next</p>
-</div>
-
+<!-- OCT -->
 <div id="oct" class="hidden">
 <button onclick="show('research')">← Back</button>
-
 <div class="card" onclick="openLink('atlas')">📊 OCT Atlas</div>
 <div class="card" onclick="openLink('cases')">📁 Cases</div>
 <div class="card" onclick="openLink('articles')">📚 Articles</div>
-
 </div>
 
 </div>
 
 <script>
 
-const API = "https://ophth-ai.onrender.com";
-
-// STORAGE
-let patients = JSON.parse(localStorage.getItem("patients")||"[]");
-let currentPatient = null;
-
 // NAV
 function show(page){
- document.querySelectorAll("#home,#ai,#exam,#patients,#research,#meds,#diseases,#oct")
+ document.querySelectorAll("#home,#ai,#exam,#patients,#research,#meds,#oct")
  .forEach(p=>p.classList.add("hidden"));
  document.getElementById(page).classList.remove("hidden");
 }
 
-// AI MODE
+// AI
 async function runAI(){
- let res = await fetch(API+"/ai",{
+ let res = await fetch("https://ophth-ai.onrender.com/ai",{
    method:"POST",
    headers:{"Content-Type":"application/json"},
    body:JSON.stringify({cc:ai_input.value})
@@ -198,119 +148,34 @@ async function runAI(){
  ai_out.innerText = data.result;
 }
 
-// STEP FLOW
-function next(n){
- document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
- document.getElementById("step"+n).classList.add('active');
-
- if(n===6) runTesting();
-}
-
-// TESTING
-function runTesting(){
- let t=[];
- if(iop_od.value>22 || iop_os.value>22){
-   t.push("OCT RNFL","Visual Field","Pachymetry");
- }
- if(cc.value.includes("blur")) t.push("Macular OCT");
- if(cc.value.includes("floaters")) t.push("Fundus Photo");
-
- testing.innerHTML = t.join("<br>");
- window.tests = t;
-}
-
-// DILATION
-function setDil(v){ window.dil=v; }
-
-// ANALYZE
-async function analyze(){
-
- let today = new Date().toLocaleDateString();
-
- let visit = {
-   date:today,
-   cc:cc.value,
-   va_od:va_od.value,
-   va_os:va_os.value,
-   iop_od:iop_od.value,
-   iop_os:iop_os.value
- };
-
- currentPatient?.visits.push(visit);
- localStorage.setItem("patients", JSON.stringify(patients));
-
- let res = await fetch(API+"/ai",{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({
-     cc:cc.value,
-     va_od:va_od.value,
-     va_os:va_os.value,
-     iop_od:iop_od.value,
-     iop_os:iop_os.value,
-     history:slitlamp.value
-   })
- });
-
- let data = await res.json();
-
- exam_out.innerText = `
-S: ${cc.value}
-
-O:
-VA ${va_od.value}/${va_os.value}
-IOP ${iop_od.value}/${iop_os.value}
-
-A:
-${data.result}
-
-P:
-${tests.join(", ")}
-`;
-}
-
-// PATIENT SYSTEM
-function savePatient(){
- let p={last:last.value,first:first.value,dob:dob.value,visits:[]};
- patients.push(p);
- localStorage.setItem("patients", JSON.stringify(patients));
- alert("Saved");
-}
-
-function searchPatients(){
- let q=search.value.toLowerCase();
- results.innerHTML="";
- patients.forEach(p=>{
-   if((p.last+p.first).toLowerCase().includes(q)){
-     let d=document.createElement("div");
-     d.innerText=p.last+", "+p.first;
-     d.onclick=()=>selectPatient(p);
-     results.appendChild(d);
-   }
- });
-}
-
-function selectPatient(p){
- currentPatient=p;
- patientHeader.innerText=p.last+", "+p.first;
- show('exam');
-}
-
 // OCT LINKS
 function openLink(type){
-
- if(type==="atlas"){
-   window.open("https://app.octcases.com/atlas","_blank");
- }
-
- if(type==="cases"){
-   window.open("https://app.octcases.com/cases","_blank");
- }
-
- if(type==="articles"){
-   window.open("https://app.octcases.com/articles","_blank");
- }
+ if(type==="atlas") window.open("https://app.octcases.com/atlas","_blank");
+ if(type==="cases") window.open("https://app.octcases.com/cases","_blank");
+ if(type==="articles") window.open("https://app.octcases.com/articles","_blank");
 }
+
+// MEDS
+let meds = [
+{name:"Latanoprost",dose:"qhs",use:"glaucoma"},
+{name:"Timolol",dose:"BID",use:"glaucoma"},
+{name:"Moxifloxacin",dose:"QID",use:"infection"}
+];
+
+function renderMeds(){
+ let q = medSearch.value.toLowerCase();
+ medList.innerHTML = meds
+   .filter(m=>m.name.toLowerCase().includes(q))
+   .map(m=>`
+     <div class="med-card">
+       <div class="med-title">${m.name}</div>
+       Dose: ${m.dose}<br>
+       Use: ${m.use}
+     </div>
+   `).join("");
+}
+
+renderMeds();
 
 </script>
 
