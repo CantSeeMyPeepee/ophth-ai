@@ -56,4 +56,5 @@ app.post('/image', upload.single('image'), (req,res)=>{
 });
 
 app.use(express.static('.'));
-app.listen(3000, ()=>console.log("V20 running"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, ()=>console.log("Running on " + PORT));
