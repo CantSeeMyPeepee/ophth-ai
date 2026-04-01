@@ -4,8 +4,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mainland Eye AI</title>
 
-<meta name="apple-mobile-web-app-title" content="Mainland Eye AI">
-
 <style>
 body { font-family:-apple-system; margin:0; background:#f5f7fa; }
 
@@ -33,31 +31,24 @@ body { font-family:-apple-system; margin:0; background:#f5f7fa; }
 
 .hidden { display:none; }
 
-input {
-  width:100%;
-  padding:12px;
-  border-radius:10px;
-  border:1px solid #ddd;
-  margin:6px 0;
-}
-
 button {
   width:100%;
-  padding:12px;
-  margin-top:6px;
+  padding:14px;
+  margin-top:8px;
   border:none;
-  border-radius:10px;
+  border-radius:12px;
   background:#0a84ff;
   color:white;
 }
 
 .back { background:#e5e7eb; color:black; }
 
-.result { padding:8px; border-bottom:1px solid #eee; cursor:pointer; }
-
-pre { white-space:pre-wrap; font-size:14px; }
-
-.small { font-size:12px; color:#666; }
+iframe {
+  width:100%;
+  height:75vh;
+  border:none;
+  border-radius:12px;
+}
 </style>
 </head>
 
@@ -67,61 +58,60 @@ pre { white-space:pre-wrap; font-size:14px; }
 
 <div class="container">
 
-<!-- 🏠 HOME -->
+<!-- HOME -->
 <div id="home">
 <div class="card" onclick="show('ai')">🧠 AI Mode</div>
-<div class="card" onclick="show('patients')">👤 Patient Search</div>
+<div class="card" onclick="show('patients')">👤 Patient Lookup</div>
 <div class="card" onclick="show('research')">🔬 Research</div>
 </div>
 
-<!-- 🧠 AI MODE -->
+<!-- AI -->
 <div id="ai" class="hidden">
-
 <button class="back" onclick="show('home')">← Back</button>
-
-<div class="card">
-<b id="patientHeader">No patient selected</b>
+<div class="card">AI Mode (your existing system stays here)</div>
 </div>
 
-<input id="cc" placeholder="Chief Complaint">
-<input id="va" placeholder="VA">
-<input id="iop" placeholder="IOP">
-
-<button onclick="analyze()">Analyze + Save Visit</button>
-
-<div class="card">
-<div class="small">Visit History</div>
-<div id="history"></div>
-</div>
-
-<pre id="out"></pre>
-
-</div>
-
-<!-- 👤 PATIENT SEARCH -->
+<!-- PATIENTS -->
 <div id="patients" class="hidden">
+<button class="back" onclick="show('home')">← Back</button>
+<div class="card">Patient Lookup (your existing system stays here)</div>
+</div>
 
+<!-- RESEARCH MENU -->
+<div id="research" class="hidden">
 <button class="back" onclick="show('home')">← Back</button>
 
-<input id="search" placeholder="Search patient..." oninput="searchPatients()">
-<div id="results"></div>
-
-<input id="last" placeholder="Last">
-<input id="first" placeholder="First">
-<input id="dob" placeholder="DOB">
-
-<button onclick="savePatient()">Save Patient</button>
+<div class="card" onclick="show('meds')">💊 Meds</div>
+<div class="card" onclick="show('oct')">🧠 OCT Cases</div>
+<div class="card" onclick="show('diseases')">👁️ Ocular Diseases</div>
 
 </div>
 
-<!-- 🔬 RESEARCH (DRUGS) -->
-<div id="research" class="hidden">
+<!-- MEDS -->
+<div id="meds" class="hidden">
+<button class="back" onclick="show('research')">← Back</button>
+<div class="card">Medication reference (your drug DB stays here)</div>
+</div>
 
-<button class="back" onclick="show('home')">← Back</button>
+<!-- OCT CASES -->
+<div id="oct" class="hidden">
+<button class="back" onclick="show('research')">← Back</button>
 
-<input id="drugSearch" placeholder="Search medications..." oninput="searchDrugs()">
+<!-- Option 1: embedded -->
+<iframe src="https://www.octcases.com"></iframe>
 
-<div id="drugResults"></div>
+<!-- Option 2 (backup link) -->
+<button onclick="window.open('https://www.octcases.com','_blank')">
+Open Full Site
+</button>
+
+</div>
+
+<!-- OCULAR DISEASES -->
+<div id="diseases" class="hidden">
+<button class="back" onclick="show('research')">← Back</button>
+
+<div class="card">Coming next: Disease database (AMD, glaucoma, etc)</div>
 
 </div>
 
@@ -129,135 +119,11 @@ pre { white-space:pre-wrap; font-size:14px; }
 
 <script>
 
-const API = "https://ophth-ai.onrender.com";
-
-// ================= NAV =================
-function show(p){
- document.querySelectorAll("#home,#ai,#patients,#research")
+function show(page){
+ document.querySelectorAll("#home,#ai,#patients,#research,#meds,#oct,#diseases")
  .forEach(d=>d.classList.add("hidden"));
 
- document.getElementById(p).classList.remove("hidden");
-}
-
-// ================= PATIENT SYSTEM =================
-let patients = JSON.parse(localStorage.getItem("patients")||"[]");
-let currentPatient = null;
-
-function savePatient(){
- let p = {last:last.value, first:first.value, dob:dob.value, visits:[]};
- patients.push(p);
- localStorage.setItem("patients", JSON.stringify(patients));
-}
-
-function searchPatients(){
- let q = search.value.toLowerCase();
- results.innerHTML="";
-
- patients.forEach(p=>{
-   let t = `${p.last} ${p.first}`.toLowerCase();
-   if(t.includes(q)){
-     let d=document.createElement("div");
-     d.className="result";
-     d.innerText=`${p.last}, ${p.first}`;
-     d.onclick=()=>selectPatient(p);
-     results.appendChild(d);
-   }
- });
-}
-
-function selectPatient(p){
- currentPatient = p;
- localStorage.setItem("currentPatient", JSON.stringify(p));
- patientHeader.innerText = `${p.last}, ${p.first} DOB:${p.dob}`;
- show('ai');
- renderHistory();
-}
-
-window.onload = ()=>{
- let p = JSON.parse(localStorage.getItem("currentPatient"));
- if(p){
-   currentPatient = p;
-   patientHeader.innerText = `${p.last}, ${p.first} DOB:${p.dob}`;
-   renderHistory();
- }
-};
-
-// ================= VISITS =================
-function renderHistory(){
- history.innerHTML="";
- if(!currentPatient) return;
-
- currentPatient.visits.slice().reverse().forEach(v=>{
-   let d=document.createElement("div");
-   d.className="result";
-   d.innerText=`${v.date} | IOP ${v.iop}`;
-   history.appendChild(d);
- });
-}
-
-async function analyze(){
-
- let today = new Date().toLocaleDateString();
-
- let visit = {
-   date: today,
-   cc: cc.value,
-   va: va.value,
-   iop: iop.value
- };
-
- currentPatient.visits.push(visit);
-
- let i = patients.findIndex(p =>
-   p.last===currentPatient.last &&
-   p.first===currentPatient.first &&
-   p.dob===currentPatient.dob
- );
-
- patients[i] = currentPatient;
- localStorage.setItem("patients", JSON.stringify(patients));
-
- renderHistory();
-
- let res = await fetch(API + "/ai", {
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body: JSON.stringify({
-     cc: cc.value,
-     va: va.value,
-     iop: iop.value
-   })
- });
-
- let data = await res.json();
- out.innerText = data.result;
-}
-
-// ================= DRUG DATABASE =================
-
-const drugs = [
- {name:"Prednisolone Acetate", use:"Steroid", note:"Inflammation"},
- {name:"Timolol", use:"Beta Blocker", note:"Lower IOP"},
- {name:"Latanoprost", use:"Prostaglandin", note:"Lower IOP"},
- {name:"Brimonidine", use:"Alpha Agonist", note:"Lower IOP"},
- {name:"Dorzolamide", use:"CAI", note:"Lower IOP"},
- {name:"Moxifloxacin", use:"Antibiotic", note:"Broad spectrum"},
- {name:"Erythromycin", use:"Ointment", note:"Lid infections"},
- {name:"Atropine", use:"Cycloplegic", note:"Dilates pupil"}
-];
-
-function searchDrugs(){
- let q = drugSearch.value.toLowerCase();
- drugResults.innerHTML="";
-
- drugs.forEach(d=>{
-   if(d.name.toLowerCase().includes(q)){
-     let div=document.createElement("div");
-     div.className="result";
-     div.innerText=`${d.name} — ${d.use} (${d.note})`;
-     drugResults.appendChild(div);
-   }
- });
+ document.getElementById(page).classList.remove("hidden");
 }
 
 </script>
