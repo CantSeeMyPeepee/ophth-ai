@@ -4,42 +4,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mainland Eye AI</title>
 
-<link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icon.png">
-
 <style>
 body { font-family:-apple-system; margin:0; background:#0f1115; color:#e5e7eb; }
-.header { background:#1a1d23; padding:16px; text-align:center; }
 .container { padding:14px; }
+.step { display:none; }
+.active { display:block; }
 
 .card {
   background:#1a1d23;
+  padding:16px;
   border-radius:16px;
-  padding:14px;
-  margin-bottom:10px;
+  margin-bottom:12px;
 }
+
+button {
+  padding:12px;
+  margin:6px;
+  border:none;
+  border-radius:10px;
+  background:#2f343d;
+  color:white;
+}
+
+.row { display:flex; flex-wrap:wrap; gap:6px; }
 
 input {
   width:100%;
   padding:12px;
-  margin:6px 0;
+  margin-top:8px;
   border-radius:10px;
+  border:1px solid #2a2f38;
   background:#111318;
   color:white;
-  border:1px solid #2a2f38;
 }
-
-button {
-  padding:10px;
-  border-radius:10px;
-  background:#2f343d;
-  color:white;
-  border:1px solid #3a404b;
-  margin:4px;
-}
-
-.row { display:flex; flex-wrap:wrap; gap:6px; }
-.quick { flex:1; }
 
 pre {
   background:#111318;
@@ -51,38 +48,28 @@ pre {
 
 <body>
 
-<div class="header">Mainland Eye AI</div>
-
 <div class="container">
 
-<!-- CC -->
+<!-- STEP 1 CC -->
+<div id="step1" class="step active">
 <div class="card">
-<div class="row">
-<button class="quick" onclick="setCC('blurred vision')">Blur</button>
-<button class="quick" onclick="setCC('pain')">Pain</button>
-<button class="quick" onclick="setCC('floaters')">Floaters</button>
-</div>
-<input id="cc" placeholder="Chief Complaint">
-</div>
-
-<!-- VA -->
-<div class="card">
-<b>Visual Acuity</b>
+<h3>Chief Complaint</h3>
 
 <div class="row">
-<button onclick="setVA('od','20/20')">OD 20/20</button>
-<button onclick="setVA('od','20/40')">OD 20/40</button>
-<button onclick="setVA('os','20/20')">OS 20/20</button>
-<button onclick="setVA('os','20/40')">OS 20/40</button>
+<button onclick="setCC('blurred vision')">Blur</button>
+<button onclick="setCC('pain')">Pain</button>
+<button onclick="setCC('floaters')">Floaters</button>
 </div>
 
-<input id="va_od" placeholder="VA OD">
-<input id="va_os" placeholder="VA OS">
+<input id="cc">
+<button onclick="next(2)">Next →</button>
+</div>
 </div>
 
-<!-- IOP -->
+<!-- STEP 2 IOP -->
+<div id="step2" class="step">
 <div class="card">
-<b>IOP</b>
+<h3>IOP</h3>
 
 <div class="row">
 <button onclick="setIOP('od',15)">OD 15</button>
@@ -91,11 +78,72 @@ pre {
 <button onclick="setIOP('os',25)">OS 25</button>
 </div>
 
-<input id="iop_od" placeholder="IOP OD">
-<input id="iop_os" placeholder="IOP OS">
+<input id="iop_od" placeholder="OD">
+<input id="iop_os" placeholder="OS">
+
+<button onclick="next(3)">Next →</button>
+</div>
 </div>
 
+<!-- STEP 3 VA -->
+<div id="step3" class="step">
+<div class="card">
+<h3>Visual Acuity</h3>
+
+<div class="row">
+<button onclick="setVA('od','20/20')">OD 20/20</button>
+<button onclick="setVA('od','20/40')">OD 20/40</button>
+<button onclick="setVA('os','20/20')">OS 20/20</button>
+<button onclick="setVA('os','20/40')">OS 20/40</button>
+</div>
+
+<input id="va_od" placeholder="OD">
+<input id="va_os" placeholder="OS">
+
+<button onclick="next(4)">Next →</button>
+</div>
+</div>
+
+<!-- STEP 4 SLIT LAMP -->
+<div id="step4" class="step">
+<div class="card">
+<h3>Slit Lamp</h3>
+
+<div class="row">
+<button onclick="setSL('normal')">Normal</button>
+<button onclick="setSL('dry eye')">Dry Eye</button>
+<button onclick="setSL('inflammation')">Inflammation</button>
+</div>
+
+<input id="slitlamp">
+<button onclick="next(5)">Next →</button>
+</div>
+</div>
+
+<!-- STEP 5 DILATION -->
+<div id="step5" class="step">
+<div class="card">
+<h3>Dilation Decision</h3>
+
+<div class="row">
+<button onclick="setDil('yes')">Dilated</button>
+<button onclick="setDil('no')">Not Dilated</button>
+</div>
+
+<button onclick="next(6)">Next →</button>
+</div>
+</div>
+
+<!-- STEP 6 TESTING -->
+<div id="step6" class="step">
+<div class="card">
+<h3>Recommended Testing</h3>
+
+<div id="testing"></div>
+
 <button onclick="analyze()">Analyze</button>
+</div>
+</div>
 
 <pre id="out"></pre>
 
@@ -105,35 +153,69 @@ pre {
 
 const API = "https://ophth-ai.onrender.com";
 
-// SETTERS
-function setCC(v){ cc.value = v; }
-function setVA(eye, val){
-  if(eye === "od") va_od.value = val;
-  else va_os.value = val;
-}
-function setIOP(eye, val){
-  if(eye === "od") iop_od.value = val;
-  else iop_os.value = val;
+// NAV
+function next(n){
+ document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+ document.getElementById("step"+n).classList.add('active');
+
+ if(n===6) runTestingLogic();
 }
 
-// AI CALL
+// SETTERS
+function setCC(v){ cc.value=v; }
+function setIOP(eye,val){ eye==='od'?iop_od.value=val:iop_os.value=val; }
+function setVA(eye,val){ eye==='od'?va_od.value=val:va_os.value=val; }
+function setSL(v){ slitlamp.value=v; }
+function setDil(v){ window.dilated=v; }
+
+// 🧠 TESTING LOGIC
+function runTestingLogic(){
+
+ let tests = [];
+
+ let iopOD = parseInt(iop_od.value);
+ let iopOS = parseInt(iop_os.value);
+
+ if(iopOD>22 || iopOS>22){
+   tests.push("OCT RNFL");
+   tests.push("Visual Field");
+   tests.push("Pachymetry");
+ }
+
+ if(cc.value.includes("blur")){
+   tests.push("Macular OCT");
+ }
+
+ if(cc.value.includes("floaters")){
+   tests.push("Fundus Photo");
+ }
+
+ if(slitlamp.value.includes("dry")){
+   tests.push("Tear Film / Dry Eye Testing");
+ }
+
+ testing.innerHTML = tests.map(t=>`<div>• ${t}</div>`).join("");
+}
+
+// AI
 async function analyze(){
 
-  let res = await fetch(API + "/ai", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({
-      cc: cc.value,
-      va_od: va_od.value,
-      va_os: va_os.value,
-      iop_od: iop_od.value,
-      iop_os: iop_os.value
-    })
-  });
+ let res = await fetch(API+"/ai",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+     cc:cc.value,
+     va_od:va_od.value,
+     va_os:va_os.value,
+     iop_od:iop_od.value,
+     iop_os:iop_os.value,
+     history:slitlamp.value
+   })
+ });
 
-  let data = await res.json();
+ let data = await res.json();
 
-  out.innerText = data.result;
+ out.innerText = data.result;
 }
 
 </script>
