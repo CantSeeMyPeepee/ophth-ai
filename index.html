@@ -8,26 +8,28 @@
 body { font-family:-apple-system; margin:0; background:#0f1115; color:#e5e7eb; }
 .container { padding:14px; }
 
-.step { display:none; }
-.active { display:block; }
-
 .card {
   background:#1a1d23;
-  padding:16px;
+  padding:18px;
   border-radius:16px;
   margin-bottom:12px;
+  text-align:center;
+  font-size:18px;
 }
 
 button {
   padding:12px;
-  margin:6px;
   border:none;
   border-radius:10px;
   background:#2f343d;
   color:white;
+  margin:6px;
 }
 
-.row { display:flex; flex-wrap:wrap; gap:6px; }
+.hidden { display:none; }
+
+.step { display:none; }
+.active { display:block; }
 
 input {
   width:100%;
@@ -41,7 +43,7 @@ input {
 
 pre {
   background:#111318;
-  padding:12px;
+  padding:10px;
   border-radius:10px;
   white-space:pre-wrap;
 }
@@ -52,88 +54,93 @@ pre {
 
 <div class="container">
 
+<!-- HOME -->
+<div id="home">
+
+<div class="card" onclick="show('ai')">🧠 AI Mode</div>
+<div class="card" onclick="show('exam')">👁️ Exam</div>
+<div class="card" onclick="show('patients')">👤 Patient Lookup</div>
+<div class="card" onclick="show('research')">🔬 Research</div>
+
+</div>
+
+<!-- AI MODE -->
+<div id="ai" class="hidden">
+
+<button onclick="show('home')">← Back</button>
+
+<input id="ai_input" placeholder="Describe case...">
+<button onclick="runAI()">Analyze</button>
+
+<pre id="ai_out"></pre>
+
+</div>
+
+<!-- EXAM MODE -->
+<div id="exam" class="hidden">
+
+<button onclick="show('home')">← Back</button>
+
 <!-- STEP 1 -->
 <div id="step1" class="step active">
-<div class="card">
 <h3>Chief Complaint</h3>
-<div class="row">
-<button onclick="setCC('blurred vision')">Blur</button>
-<button onclick="setCC('pain')">Pain</button>
-<button onclick="setCC('floaters')">Floaters</button>
-</div>
 <input id="cc">
-<button onclick="next(2)">Next →</button>
-</div>
+<button onclick="next(2)">Next</button>
 </div>
 
 <!-- STEP 2 -->
 <div id="step2" class="step">
-<div class="card">
 <h3>IOP</h3>
-<div class="row">
-<button onclick="setIOP('od',15)">OD 15</button>
-<button onclick="setIOP('od',25)">OD 25</button>
-<button onclick="setIOP('os',15)">OS 15</button>
-<button onclick="setIOP('os',25)">OS 25</button>
-</div>
 <input id="iop_od" placeholder="OD">
 <input id="iop_os" placeholder="OS">
-<button onclick="next(3)">Next →</button>
-</div>
+<button onclick="next(3)">Next</button>
 </div>
 
 <!-- STEP 3 -->
 <div id="step3" class="step">
-<div class="card">
-<h3>Visual Acuity</h3>
-<div class="row">
-<button onclick="setVA('od','20/20')">OD 20/20</button>
-<button onclick="setVA('od','20/40')">OD 20/40</button>
-<button onclick="setVA('os','20/20')">OS 20/20</button>
-<button onclick="setVA('os','20/40')">OS 20/40</button>
-</div>
+<h3>VA</h3>
 <input id="va_od" placeholder="OD">
 <input id="va_os" placeholder="OS">
-<button onclick="next(4)">Next →</button>
-</div>
+<button onclick="next(4)">Next</button>
 </div>
 
 <!-- STEP 4 -->
 <div id="step4" class="step">
-<div class="card">
 <h3>Slit Lamp</h3>
-<div class="row">
-<button onclick="setSL('normal')">Normal</button>
-<button onclick="setSL('dry eye')">Dry Eye</button>
-<button onclick="setSL('inflammation')">Inflammation</button>
-</div>
 <input id="slitlamp">
-<button onclick="next(5)">Next →</button>
-</div>
+<button onclick="next(5)">Next</button>
 </div>
 
 <!-- STEP 5 -->
 <div id="step5" class="step">
-<div class="card">
 <h3>Dilation</h3>
-<div class="row">
 <button onclick="setDil('Dilated')">Dilated</button>
 <button onclick="setDil('Not Dilated')">Not Dilated</button>
-</div>
-<button onclick="next(6)">Next →</button>
-</div>
+<button onclick="next(6)">Next</button>
 </div>
 
 <!-- STEP 6 -->
 <div id="step6" class="step">
-<div class="card">
 <h3>Testing</h3>
 <div id="testing"></div>
 <button onclick="analyze()">Generate Plan</button>
 </div>
+
+<pre id="exam_out"></pre>
+
 </div>
 
-<pre id="out"></pre>
+<!-- PATIENTS -->
+<div id="patients" class="hidden">
+<button onclick="show('home')">← Back</button>
+<p>Patient system coming next</p>
+</div>
+
+<!-- RESEARCH -->
+<div id="research" class="hidden">
+<button onclick="show('home')">← Back</button>
+<p>Drug + disease database coming next</p>
+</div>
 
 </div>
 
@@ -142,6 +149,13 @@ pre {
 const API = "https://ophth-ai.onrender.com";
 
 // NAV
+function show(page){
+ document.querySelectorAll("#home,#ai,#exam,#patients,#research")
+ .forEach(p=>p.classList.add("hidden"));
+ document.getElementById(page).classList.remove("hidden");
+}
+
+// STEP FLOW
 function next(n){
  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
  document.getElementById("step"+n).classList.add('active');
@@ -149,35 +163,39 @@ function next(n){
  if(n===6) runTesting();
 }
 
-// SETTERS
-function setCC(v){ cc.value=v; }
-function setIOP(e,v){ e==='od'?iop_od.value=v:iop_os.value=v; }
-function setVA(e,v){ e==='od'?va_od.value=v:va_os.value=v; }
-function setSL(v){ slitlamp.value=v; }
-function setDil(v){ window.dil=v; }
-
-// TEST LOGIC
+// TESTING LOGIC
 function runTesting(){
-
  let t=[];
-
  if(iop_od.value>22 || iop_os.value>22){
    t.push("OCT RNFL");
    t.push("Visual Field");
    t.push("Pachymetry");
  }
-
  if(cc.value.includes("blur")) t.push("Macular OCT");
  if(cc.value.includes("floaters")) t.push("Fundus Photo");
 
- testing.innerHTML=t.map(x=>`• ${x}`).join("<br>");
- window.tests=t;
+ testing.innerHTML = t.join("<br>");
+ window.tests = t;
 }
 
-// SOAP GENERATION
+// DILATION
+function setDil(v){ window.dil=v; }
+
+// AI MODE
+async function runAI(){
+ let res = await fetch(API+"/ai",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({cc:ai_input.value})
+ });
+ let data = await res.json();
+ ai_out.innerText = data.result;
+}
+
+// EXAM ANALYSIS
 async function analyze(){
 
- let res=await fetch(API+"/ai",{
+ let res = await fetch(API+"/ai",{
    method:"POST",
    headers:{"Content-Type":"application/json"},
    body:JSON.stringify({
@@ -190,16 +208,16 @@ async function analyze(){
    })
  });
 
- let data=await res.json();
+ let data = await res.json();
 
- let soap = `
+ exam_out.innerText = `
 S: ${cc.value}
 
 O:
-VA OD: ${va_od.value}
-VA OS: ${va_os.value}
-IOP OD: ${iop_od.value}
-IOP OS: ${iop_os.value}
+VA OD ${va_od.value}
+VA OS ${va_os.value}
+IOP OD ${iop_od.value}
+IOP OS ${iop_os.value}
 Slit Lamp: ${slitlamp.value}
 Dilation: ${window.dil}
 
@@ -207,11 +225,8 @@ A:
 ${data.result}
 
 P:
-Testing: ${tests.join(", ")}
-Follow up based on findings
+${tests.join(", ")}
 `;
-
- out.innerText = soap;
 }
 
 </script>
