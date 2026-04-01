@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ophth AI V20</title>
+<style>
+body { font-family:-apple-system,Arial; margin:0; background:#f2f4f7;}
+.container { padding:12px; }
+input, textarea {
+  width:100%; margin:6px 0; padding:14px;
+  font-size:18px; border-radius:12px; border:1px solid #ccc;
+}
+button {
+  padding:16px; width:100%; margin-top:8px;
+  background:#007AFF; color:white; border:none;
+  border-radius:14px; font-size:18px;
+}
+.section {
+  background:white; padding:14px; margin-top:10px;
+  border-radius:14px; box-shadow:0 2px 6px rgba(0,0,0,0.08);
+}
+h2 { margin:0; padding:12px; background:#007AFF; color:white; }
+pre { white-space:pre-wrap; font-size:15px; }
+</style>
+</head>
+<body>
+
+<h2>Ophth AI V20</h2>
+
+<div class="container">
+
+<div class="section">
+<input id="cc" placeholder="Chief Complaint (voice works great)">
+<input id="va" placeholder="VA (e.g. 20/40)">
+<input id="iop" placeholder="IOP (e.g. 24)">
+
+<button onclick="voice()">🎤 Voice</button>
+<button onclick="analyze()">🧠 Analyze</button>
+<button onclick="upload()">📷 Upload Image</button>
+</div>
+
+<div class="section">
+<b>AI Clinical Output</b>
+<pre id="out">Ready</pre>
+</div>
+
+</div>
+
+<script>
+const API = "http://localhost:3000";
+
+function voice(){
+ let R = new(window.SpeechRecognition || window.webkitSpeechRecognition)();
+ R.onresult = e => {
+   document.getElementById("cc").value += " " + e.results[0][0].transcript;
+ };
+ R.start();
+}
+
+async function analyze(){
+ let cc = document.getElementById("cc").value;
+ let va = document.getElementById("va").value;
+ let iop = document.getElementById("iop").value;
+
+ let res = await fetch(API + "/ai", {
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body: JSON.stringify({cc,va,iop})
+ });
+
+ let data = await res.json();
+ document.getElementById("out").innerText = data.result;
+}
+
+async function upload(){
+ let input = document.createElement("input");
+ input.type = "file";
+ input.onchange = async () => {
+   let file = input.files[0];
+   let form = new FormData();
+   form.append("image", file);
+
+   let res = await fetch(API + "/image", {
+     method:"POST",
+     body: form
+   });
+
+   let data = await res.json();
+   document.getElementById("out").innerText = data.result;
+ };
+ input.click();
+}
+</script>
+
+</body>
+</html>
