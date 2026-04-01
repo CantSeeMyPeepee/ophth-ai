@@ -8,44 +8,57 @@
 
 <style>
 body { font-family:-apple-system; margin:0; background:#f5f7fa; }
-.header { background:#0a84ff; color:white; padding:16px; text-align:center; font-weight:600; }
 
-.container { padding:10px; }
+.header {
+  background:#0a84ff;
+  color:white;
+  padding:16px;
+  text-align:center;
+  font-weight:600;
+  font-size:20px;
+}
+
+.container { padding:16px; }
 
 .card {
   background:white;
-  border-radius:14px;
-  padding:10px;
-  margin-bottom:10px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.05);
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:12px;
+  text-align:center;
+  font-size:18px;
+  font-weight:600;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  cursor:pointer;
 }
+
+.hidden { display:none; }
 
 input {
   width:100%;
   padding:12px;
   border-radius:10px;
   border:1px solid #ddd;
-  margin:4px 0;
+  margin:6px 0;
 }
 
-.row { display:flex; gap:6px; flex-wrap:wrap; }
+.row { display:flex; gap:6px; }
+.row input { flex:1; }
 
 button {
-  flex:1;
-  padding:12px;
+  width:100%;
+  padding:14px;
+  margin-top:6px;
   border:none;
-  border-radius:10px;
+  border-radius:12px;
   background:#0a84ff;
   color:white;
-  font-size:14px;
 }
 
-.quick {
+.back {
   background:#e5e7eb;
   color:black;
 }
-
-.result { padding:8px; border-bottom:1px solid #eee; cursor:pointer; }
 
 pre { white-space:pre-wrap; font-size:14px; }
 </style>
@@ -57,61 +70,59 @@ pre { white-space:pre-wrap; font-size:14px; }
 
 <div class="container">
 
-<!-- 🔍 SEARCH -->
-<div class="card">
-<input id="search" placeholder="Search patient..." oninput="searchPatients()">
-<div id="results"></div>
+<!-- HOME -->
+<div id="home">
+
+<div class="card" onclick="show('ai')">🧠 AI Mode</div>
+<div class="card" onclick="show('patients')">👤 Patient Lookup</div>
+<div class="card" onclick="show('research')">🔬 Research</div>
+
 </div>
 
-<!-- 👤 PATIENT -->
-<div class="card">
+<!-- AI MODE -->
+<div id="ai" class="hidden">
+
+<button class="back" onclick="show('home')">← Back</button>
+
+<input id="cc" placeholder="Chief Complaint">
+<input id="va" placeholder="VA">
+<input id="iop" placeholder="IOP">
+
+<button onclick="voice()">🎤 Voice</button>
+<button onclick="analyze()">Analyze</button>
+
+<pre id="out"></pre>
+
+</div>
+
+<!-- PATIENT LOOKUP -->
+<div id="patients" class="hidden">
+
+<button class="back" onclick="show('home')">← Back</button>
+
+<input id="search" placeholder="Search patient..." oninput="searchPatients()">
+<div id="results"></div>
+
 <div class="row">
 <input id="last" placeholder="Last">
 <input id="first" placeholder="First">
 <input id="dob" placeholder="DOB">
 </div>
 
-<button onclick="savePatient()">Save</button>
-</div>
-
-<!-- ⚡ QUICK INPUTS -->
-<div class="card">
-
-<div class="row">
-<button class="quick" onclick="setCC('blurred vision')">Blur</button>
-<button class="quick" onclick="setCC('eye pain')">Pain</button>
-<button class="quick" onclick="setCC('floaters flashes')">Floaters</button>
-<button class="quick" onclick="voice()">🎤</button>
-</div>
-
-<input id="cc" placeholder="Chief Complaint">
-
-<div class="row">
-<button class="quick" onclick="setVA('20/20')">20/20</button>
-<button class="quick" onclick="setVA('20/30')">20/30</button>
-<button class="quick" onclick="setVA('20/40')">20/40</button>
-<button class="quick" onclick="setVA('20/60')">20/60</button>
-</div>
-
-<input id="va" placeholder="VA">
-
-<div class="row">
-<button class="quick" onclick="setIOP(12)">12</button>
-<button class="quick" onclick="setIOP(16)">16</button>
-<button class="quick" onclick="setIOP(20)">20</button>
-<button class="quick" onclick="setIOP(24)">24</button>
-<button class="quick" onclick="setIOP(30)">30</button>
-</div>
-
-<input id="iop" placeholder="IOP">
-
-<button onclick="analyze()">🧠 Analyze</button>
+<button onclick="savePatient()">Save Patient</button>
 
 </div>
 
-<!-- 📄 OUTPUT -->
-<div class="card">
-<pre id="out">Ready</pre>
+<!-- RESEARCH -->
+<div id="research" class="hidden">
+
+<button class="back" onclick="show('home')">← Back</button>
+
+<input id="query" placeholder="Ask anything ophthalmology...">
+<button onclick="research()">Search</button>
+
+<pre id="researchOut"></pre>
+
 </div>
 
 </div>
@@ -120,39 +131,53 @@ pre { white-space:pre-wrap; font-size:14px; }
 
 const API = "https://ophth-ai.onrender.com";
 
-// ===== DATA =====
-let patients = JSON.parse(localStorage.getItem("patients") || "[]");
+// NAVIGATION
+function show(page){
+ document.querySelectorAll("#home,#ai,#patients,#research")
+ .forEach(d=>d.classList.add("hidden"));
 
-// ===== QUICK SETTERS =====
-function setCC(v){ cc.value = v; }
-function setVA(v){ va.value = v; }
-function setIOP(v){ iop.value = v; }
+ document.getElementById(page).classList.remove("hidden");
+}
 
-// ===== SAVE =====
+// ===== AI =====
+function voice(){
+ let R=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
+ R.onresult=e=>cc.value=e.results[0][0].transcript;
+ R.start();
+}
+
+async function analyze(){
+ let res = await fetch(API + "/ai", {
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body: JSON.stringify({
+     cc: cc.value,
+     va: va.value,
+     iop: iop.value
+   })
+ });
+
+ let data = await res.json();
+ out.innerText = data.result;
+}
+
+// ===== PATIENTS =====
+let patients = JSON.parse(localStorage.getItem("patients")||"[]");
+
 function savePatient(){
- let p = { last:last.value, first:first.value, dob:dob.value };
-
- let i = patients.findIndex(x =>
-   x.last===p.last && x.first===p.first && x.dob===p.dob
- );
-
- if(i>=0) patients[i]=p;
- else patients.push(p);
-
+ let p = {last:last.value, first:first.value, dob:dob.value};
+ patients.push(p);
  localStorage.setItem("patients", JSON.stringify(patients));
 }
 
-// ===== SEARCH =====
 function searchPatients(){
  let q = search.value.toLowerCase();
  results.innerHTML="";
 
  patients.forEach(p=>{
-   let txt = `${p.last} ${p.first} ${p.dob}`.toLowerCase();
-
-   if(txt.includes(q)){
+   let t = `${p.last} ${p.first} ${p.dob}`.toLowerCase();
+   if(t.includes(q)){
      let d=document.createElement("div");
-     d.className="result";
      d.innerText=`${p.last}, ${p.first}`;
      d.onclick=()=>loadPatient(p);
      results.appendChild(d);
@@ -160,42 +185,24 @@ function searchPatients(){
  });
 }
 
-// ===== LOAD =====
 function loadPatient(p){
  last.value=p.last;
  first.value=p.first;
  dob.value=p.dob;
 }
 
-// ===== VOICE =====
-function voice(){
- let R=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
- R.onresult=e=>cc.value=e.results[0][0].transcript;
- R.start();
-}
-
-// ===== ANALYZE =====
-async function analyze(){
-
- let patient = `${last.value}, ${first.value} DOB:${dob.value}`;
-
+// ===== RESEARCH =====
+async function research(){
  let res = await fetch(API + "/ai", {
    method:"POST",
    headers:{"Content-Type":"application/json"},
    body: JSON.stringify({
-     cc: cc.value,
-     va: va.value,
-     iop: iop.value,
-     patient
+     cc: query.value
    })
  });
 
  let data = await res.json();
-
- out.innerText =
- patient +
- "\n----------------\n" +
- data.result;
+ researchOut.innerText = data.result;
 }
 
 </script>
