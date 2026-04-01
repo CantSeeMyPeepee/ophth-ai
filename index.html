@@ -27,6 +27,14 @@ input {
   border:1px solid #ccc;
 }
 
+.row {
+  display:flex;
+  gap:6px;
+}
+.row input {
+  flex:1;
+}
+
 button {
   padding:16px;
   width:100%;
@@ -54,6 +62,10 @@ h2 {
   text-align:center;
 }
 
+h3 {
+  margin-top:0;
+}
+
 pre {
   white-space:pre-wrap;
   font-size:15px;
@@ -67,7 +79,31 @@ pre {
 
 <div class="container">
 
+<!-- 🧾 PATIENT INFO -->
 <div class="section">
+<h3>Patient Info</h3>
+
+<div class="row">
+<input id="last" placeholder="Last Name">
+<input id="first" placeholder="First Name">
+<input id="mi" placeholder="MI">
+</div>
+
+<input id="dob" placeholder="Birthdate (MM/DD/YYYY)">
+
+<input id="address" placeholder="Address">
+
+<div class="row">
+<input id="phone" placeholder="Phone">
+<input id="email" placeholder="Email (optional)">
+</div>
+
+</div>
+
+<!-- 👁️ CLINICAL -->
+<div class="section">
+<h3>Clinical</h3>
+
 <input id="cc" placeholder="Chief Complaint (tap mic to speak)">
 <input id="va" placeholder="VA (e.g. 20/40)">
 <input id="iop" placeholder="IOP (e.g. 24)">
@@ -75,8 +111,10 @@ pre {
 <button onclick="voice()">🎤 Voice Input</button>
 <button onclick="analyze()">🧠 Analyze</button>
 <button onclick="upload()">📷 Upload Image</button>
+
 </div>
 
+<!-- 📊 OUTPUT -->
 <div class="section">
 <b>AI Clinical Output</b>
 <pre id="out">Ready</pre>
@@ -86,7 +124,7 @@ pre {
 
 <script>
 
-// 🔥 IMPORTANT: Replace with your Render URL
+// 🔥 PUT YOUR RENDER URL HERE
 const API = "https://ophth-ai.onrender.com";
 
 function voice(){
@@ -98,6 +136,14 @@ function voice(){
 }
 
 async function analyze(){
+
+ let patientInfo = `
+Patient:
+${document.getElementById("last").value}, ${document.getElementById("first").value} ${document.getElementById("mi").value}
+DOB: ${document.getElementById("dob").value}
+Phone: ${document.getElementById("phone").value}
+`;
+
  let cc = document.getElementById("cc").value;
  let va = document.getElementById("va").value;
  let iop = document.getElementById("iop").value;
@@ -105,16 +151,24 @@ async function analyze(){
  let res = await fetch(API + "/ai", {
    method:"POST",
    headers:{"Content-Type":"application/json"},
-   body: JSON.stringify({cc,va,iop})
+   body: JSON.stringify({
+     cc,
+     va,
+     iop,
+     patient: patientInfo
+   })
  });
 
  let data = await res.json();
- document.getElementById("out").innerText = data.result;
+
+ document.getElementById("out").innerText =
+ patientInfo + "\n\n" + data.result;
 }
 
 async function upload(){
  let input = document.createElement("input");
  input.type = "file";
+
  input.onchange = async () => {
    let file = input.files[0];
 
@@ -129,6 +183,7 @@ async function upload(){
    let data = await res.json();
    document.getElementById("out").innerText = data.result;
  };
+
  input.click();
 }
 
