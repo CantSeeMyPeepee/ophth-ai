@@ -4,25 +4,51 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mainland Eye AI</title>
 
+<meta name="apple-mobile-web-app-title" content="Mainland Eye AI">
+
 <style>
-body { font-family:-apple-system; margin:0; background:#f5f7fa; }
-.header { background:#0a84ff; color:white; padding:16px; text-align:center; font-weight:600; }
-.container { padding:16px; }
+
+body {
+  font-family:-apple-system;
+  margin:0;
+  background:#0f1115;
+  color:#e5e7eb;
+}
+
+.header {
+  background:#1a1d23;
+  color:white;
+  padding:16px;
+  text-align:center;
+  font-weight:600;
+  border-bottom:1px solid #2a2f38;
+}
+
+.container {
+  padding:16px;
+}
 
 .card {
-  background:white;
+  background:#1a1d23;
   border-radius:16px;
   padding:16px;
   margin-bottom:10px;
-  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  box-shadow:0 2px 10px rgba(0,0,0,0.5);
+  cursor:pointer;
 }
 
 input {
   width:100%;
   padding:12px;
   border-radius:10px;
-  border:1px solid #ddd;
+  border:1px solid #2a2f38;
   margin:6px 0;
+  background:#111318;
+  color:#e5e7eb;
+}
+
+input::placeholder {
+  color:#6b7280;
 }
 
 button {
@@ -31,36 +57,59 @@ button {
   margin-top:6px;
   border:none;
   border-radius:12px;
-  background:#0a84ff;
+  background:#2a2f38;
   color:white;
+  font-weight:500;
 }
 
-.back { background:#e5e7eb; color:black; }
+button:hover {
+  background:#3a404b;
+}
+
+.back {
+  background:#111318;
+  border:1px solid #2a2f38;
+}
 
 .result {
   padding:10px;
-  border-bottom:1px solid #eee;
+  border-bottom:1px solid #2a2f38;
 }
 
 .alert {
-  background:#ffe5e5;
-  color:#b30000;
+  background:#2a1a1a;
+  color:#ff6b6b;
   padding:10px;
   border-radius:10px;
   margin-bottom:8px;
-  font-size:14px;
 }
 
 .good {
-  background:#e6f7ff;
+  background:#1a2a1f;
+  color:#4ade80;
   padding:10px;
   border-radius:10px;
   margin-bottom:8px;
 }
 
-.hidden { display:none; }
+.hidden {
+  display:none;
+}
 
-pre { white-space:pre-wrap; font-size:14px; }
+pre {
+  white-space:pre-wrap;
+  font-size:14px;
+  background:#111318;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid #2a2f38;
+}
+
+.small {
+  font-size:12px;
+  color:#9ca3af;
+}
+
 </style>
 </head>
 
@@ -89,13 +138,13 @@ pre { white-space:pre-wrap; font-size:14px; }
 <div id="alerts"></div>
 
 <input id="cc" placeholder="Chief Complaint">
-<input id="va" placeholder="VA (e.g. 20/40)">
+<input id="va" placeholder="VA">
 <input id="iop" placeholder="IOP">
 
 <button onclick="analyze()">Analyze + Save Visit</button>
 
 <div class="card">
-<b>Visit History</b>
+<div class="small">Visit History</div>
 <div id="history"></div>
 </div>
 
@@ -121,11 +170,44 @@ pre { white-space:pre-wrap; font-size:14px; }
 
 <!-- RESEARCH -->
 <div id="research" class="hidden">
+
 <button class="back" onclick="show('home')">← Back</button>
 
-<div class="card">💊 Meds</div>
-<div class="card">🧠 OCT Cases</div>
-<div class="card">👁️ Diseases</div>
+<div class="card" onclick="show('meds')">💊 Meds</div>
+<div class="card" onclick="show('oct')">🧠 OCT Cases</div>
+<div class="card" onclick="show('diseases')">👁️ Ocular Diseases</div>
+
+</div>
+
+<!-- MEDS -->
+<div id="meds" class="hidden">
+
+<button class="back" onclick="show('research')">← Back</button>
+
+<input id="drugSearch" placeholder="Search medications..." oninput="searchDrugs()">
+<div id="drugResults"></div>
+
+</div>
+
+<!-- OCT -->
+<div id="oct" class="hidden">
+
+<button class="back" onclick="show('research')">← Back</button>
+
+<iframe src="https://www.octcases.com" style="width:100%;height:70vh;border:none;border-radius:12px;"></iframe>
+
+<button onclick="window.open('https://www.octcases.com','_blank')">Open Full Site</button>
+
+</div>
+
+<!-- DISEASES -->
+<div id="diseases" class="hidden">
+
+<button class="back" onclick="show('research')">← Back</button>
+
+<input id="diseaseSearch" placeholder="Search diseases..." oninput="searchDiseases()">
+<div id="diseaseResults"></div>
+
 </div>
 
 </div>
@@ -136,7 +218,7 @@ const API = "https://ophth-ai.onrender.com";
 
 // NAV
 function show(p){
- document.querySelectorAll("#home,#ai,#patients,#research")
+ document.querySelectorAll("#home,#ai,#patients,#research,#meds,#oct,#diseases")
  .forEach(d=>d.classList.add("hidden"));
  document.getElementById(p).classList.remove("hidden");
 }
@@ -147,17 +229,17 @@ let currentPatient = null;
 
 // SAVE PATIENT
 function savePatient(){
- let p = {last:last.value, first:first.value, dob:dob.value, visits:[]};
+ let p={last:last.value,first:first.value,dob:dob.value,visits:[]};
  patients.push(p);
  localStorage.setItem("patients", JSON.stringify(patients));
 }
 
 // SEARCH
 function searchPatients(){
- let q = search.value.toLowerCase();
+ let q=search.value.toLowerCase();
  results.innerHTML="";
  patients.forEach(p=>{
-   let txt = `${p.last} ${p.first}`.toLowerCase();
+   let txt=`${p.last} ${p.first}`.toLowerCase();
    if(txt.includes(q)){
      let d=document.createElement("div");
      d.className="result";
@@ -179,7 +261,7 @@ function selectPatient(p){
 }
 
 // LOAD LAST
-window.onload = ()=>{
+window.onload=()=>{
  let p=JSON.parse(localStorage.getItem("currentPatient"));
  if(p){
    currentPatient=p;
@@ -193,7 +275,6 @@ window.onload = ()=>{
 function renderHistory(){
  history.innerHTML="";
  if(!currentPatient) return;
-
  currentPatient.visits.slice().reverse().forEach(v=>{
    let d=document.createElement("div");
    d.className="result";
@@ -202,67 +283,59 @@ function renderHistory(){
  });
 }
 
-// TREND ANALYSIS
+// ALERTS
 function analyzeTrends(){
  alerts.innerHTML="";
+ if(!currentPatient || currentPatient.visits.length<2) return;
 
- if(!currentPatient || currentPatient.visits.length < 2) return;
+ let v=currentPatient.visits;
+ let last=v[v.length-1];
+ let prev=v[v.length-2];
 
- let visits = currentPatient.visits;
- let last = visits[visits.length-1];
- let prev = visits[visits.length-2];
-
- // IOP trend
- if(parseInt(last.iop) > parseInt(prev.iop)){
-   alerts.innerHTML += `<div class="alert">⚠️ IOP rising</div>`;
+ if(parseInt(last.iop)>parseInt(prev.iop)){
+   alerts.innerHTML+=`<div class="alert">⚠️ IOP Rising</div>`;
  }
 
- // VA decline
- if(last.va > prev.va){
-   alerts.innerHTML += `<div class="alert">⚠️ Vision worsening</div>`;
+ if(last.va>prev.va){
+   alerts.innerHTML+=`<div class="alert">⚠️ Vision Declining</div>`;
  }
 }
 
 // AI
 async function analyze(){
 
- let today = new Date().toLocaleDateString();
+ let today=new Date().toLocaleDateString();
 
- let visit = {
-   date: today,
-   cc: cc.value,
-   va: va.value,
-   iop: iop.value
- };
-
+ let visit={date:today,cc:cc.value,va:va.value,iop:iop.value};
  currentPatient.visits.push(visit);
 
- let i = patients.findIndex(p=>p.last===currentPatient.last && p.first===currentPatient.first);
+ let i=patients.findIndex(p=>p.last===currentPatient.last && p.first===currentPatient.first);
  patients[i]=currentPatient;
  localStorage.setItem("patients", JSON.stringify(patients));
 
  renderHistory();
  analyzeTrends();
 
- let historyText = currentPatient.visits.map(v=>`${v.date}: VA ${v.va}, IOP ${v.iop}`).join("\\n");
+ let historyText=currentPatient.visits.map(v=>`${v.date}: VA ${v.va}, IOP ${v.iop}`).join("\\n");
 
- let res = await fetch(API + "/ai", {
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body: JSON.stringify({
-     cc: cc.value,
-     va: va.value,
-     iop: iop.value,
-     history: historyText
-   })
- });
+ let res=await fetch(API+"/ai",{method:"POST",headers:{"Content-Type":"application/json"},
+ body:JSON.stringify({cc:cc.value,va:va.value,iop:iop.value,history:historyText})});
 
- let data = await res.json();
+ let data=await res.json();
 
- out.innerText =
- "History:\n" + historyText +
- "\n----------------\n" +
- data.result;
+ out.innerText="History:\\n"+historyText+"\\n----------------\\n"+data.result;
+}
+
+// DRUG SEARCH (basic)
+function searchDrugs(){
+ let q=drugSearch.value.toLowerCase();
+ drugResults.innerHTML="";
+}
+
+// DISEASE SEARCH (basic)
+function searchDiseases(){
+ let q=diseaseSearch.value.toLowerCase();
+ diseaseResults.innerHTML="";
 }
 
 </script>
