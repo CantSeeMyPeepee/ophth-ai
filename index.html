@@ -5,25 +5,16 @@
 <title>Mainland Eye AI</title>
 
 <style>
-
-body {
-  font-family:-apple-system;
-  margin:0;
-  background:#0f1115;
-  color:#e5e7eb;
-}
+body { font-family:-apple-system; margin:0; background:#0f1115; color:#e5e7eb; }
 
 .header {
   background:#1a1d23;
   padding:16px;
   text-align:center;
-  font-weight:600;
   border-bottom:1px solid #2a2f38;
 }
 
-.container {
-  padding:14px;
-}
+.container { padding:14px; }
 
 .card {
   background:#1a1d23;
@@ -44,65 +35,60 @@ input {
   color:#e5e7eb;
 }
 
-input::placeholder {
-  color:#6b7280;
-}
+input::placeholder { color:#6b7280; }
 
 /* BUTTONS */
 button {
   padding:12px;
   border:none;
   border-radius:10px;
-  background:#2f343d; /* 👈 darker gray */
-  color:#ffffff;
+  background:#2f343d;
+  color:white;
   margin:4px;
   border:1px solid #3a404b;
-  transition: all 0.15s ease;
 }
 
-/* Hover (desktop) */
-button:hover {
-  background:#3a404b;
-}
-
-/* Press effect */
 button:active {
   background:#454c59;
   transform:scale(0.98);
 }
 
-/* Back button */
-.back {
-  background:#1f232a;
-}
+.back { background:#1f232a; }
 
-/* Quick buttons */
-.quick {
-  flex:1;
-  min-width:60px;
-}
+/* LAYOUT */
+.row { display:flex; flex-wrap:wrap; gap:6px; }
+.quick { flex:1; min-width:60px; }
+.hidden { display:none; }
 
-/* Layout */
-.row {
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-}
-
-.hidden {
-  display:none;
-}
-
-/* Alerts */
-.alert {
-  background:#2a1a1a;
+/* ALERT COLORS */
+.alert-red {
+  background:#3a1a1a;
   color:#ff6b6b;
-  padding:8px;
-  border-radius:8px;
+  padding:10px;
+  border-radius:10px;
   margin-bottom:6px;
+  border-left:4px solid #ff4d4d;
 }
 
-/* Output */
+.alert-yellow {
+  background:#3a331a;
+  color:#ffd166;
+  padding:10px;
+  border-radius:10px;
+  margin-bottom:6px;
+  border-left:4px solid #facc15;
+}
+
+.alert-green {
+  background:#1a3a25;
+  color:#4ade80;
+  padding:10px;
+  border-radius:10px;
+  margin-bottom:6px;
+  border-left:4px solid #22c55e;
+}
+
+/* OUTPUT */
 pre {
   background:#111318;
   padding:10px;
@@ -282,6 +268,7 @@ function selectPatient(p){
  patientHeader.innerText=p.last+", "+p.first;
  show('ai');
  renderHistory();
+ analyzeTrends();
 }
 
 // HISTORY
@@ -294,6 +281,41 @@ function renderHistory(){
    d.innerText=`${v.date} | VA ${v.va} | IOP ${v.iop}`;
    history.appendChild(d);
  });
+}
+
+// SMART ALERTS
+function analyzeTrends(){
+
+ alerts.innerHTML="";
+
+ if(!currentPatient || currentPatient.visits.length<2) return;
+
+ let v=currentPatient.visits;
+ let last=v[v.length-1];
+ let prev=v[v.length-2];
+
+ let iopRise = parseInt(last.iop) - parseInt(prev.iop);
+
+ // RED = dangerous
+ if(last.iop >= 30){
+   alerts.innerHTML += `<div class="alert-red">🔴 High IOP — possible glaucoma risk</div>`;
+ }
+
+ // YELLOW = trending worse
+ else if(iopRise > 3){
+   alerts.innerHTML += `<div class="alert-yellow">🟡 IOP increasing</div>`;
+ }
+
+ // GREEN = stable
+ else {
+   alerts.innerHTML += `<div class="alert-green">🟢 IOP stable</div>`;
+ }
+
+ // VA worsening
+ if(last.va > prev.va){
+   alerts.innerHTML += `<div class="alert-yellow">🟡 Vision declining</div>`;
+ }
+
 }
 
 // ANALYZE
@@ -316,6 +338,7 @@ async function analyze(){
  localStorage.setItem("patients", JSON.stringify(patients));
 
  renderHistory();
+ analyzeTrends();
 
  let historyText=currentPatient.visits.map(v=>`${v.date}: VA ${v.va}, IOP ${v.iop}`).join("\\n");
 
@@ -326,7 +349,6 @@ async function analyze(){
      cc:cc.value,
      va:va.value,
      iop:iop.value,
-     dilated:dilated,
      history:historyText
    })
  });
