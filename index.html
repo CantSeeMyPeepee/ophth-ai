@@ -1,235 +1,32 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mainland Eye AI</title>
-
-<style>
-body { font-family:-apple-system; margin:0; background:#0f1115; color:#e5e7eb; }
-.container { padding:14px; }
-
-.card {
-  background:#1a1d23;
-  padding:18px;
-  border-radius:16px;
-  margin-bottom:12px;
-  text-align:center;
-  font-size:18px;
-}
-
-button {
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  background:#2f343d;
-  color:white;
-  margin:6px;
-}
-
-.hidden { display:none; }
-
-.step { display:none; }
-.active { display:block; }
-
-input {
-  width:100%;
-  padding:12px;
-  margin-top:8px;
-  border-radius:10px;
-  border:1px solid #2a2f38;
-  background:#111318;
-  color:white;
-}
-
-pre {
-  background:#111318;
-  padding:10px;
-  border-radius:10px;
-  white-space:pre-wrap;
-}
-</style>
-</head>
-
-<body>
-
-<div class="container">
-
-<!-- HOME -->
-<div id="home">
-
-<div class="card" onclick="show('ai')">🧠 AI Mode</div>
-<div class="card" onclick="show('exam')">👁️ Exam</div>
-<div class="card" onclick="show('patients')">👤 Patient Lookup</div>
-<div class="card" onclick="show('research')">🔬 Research</div>
-
-</div>
-
-<!-- AI MODE -->
-<div id="ai" class="hidden">
-
-<button onclick="show('home')">← Back</button>
-
-<input id="ai_input" placeholder="Describe case...">
-<button onclick="runAI()">Analyze</button>
-
-<pre id="ai_out"></pre>
-
-</div>
-
-<!-- EXAM MODE -->
-<div id="exam" class="hidden">
-
-<button onclick="show('home')">← Back</button>
-
-<!-- STEP 1 -->
-<div id="step1" class="step active">
-<h3>Chief Complaint</h3>
-<input id="cc">
-<button onclick="next(2)">Next</button>
-</div>
-
-<!-- STEP 2 -->
-<div id="step2" class="step">
-<h3>IOP</h3>
-<input id="iop_od" placeholder="OD">
-<input id="iop_os" placeholder="OS">
-<button onclick="next(3)">Next</button>
-</div>
-
-<!-- STEP 3 -->
-<div id="step3" class="step">
-<h3>VA</h3>
-<input id="va_od" placeholder="OD">
-<input id="va_os" placeholder="OS">
-<button onclick="next(4)">Next</button>
-</div>
-
-<!-- STEP 4 -->
-<div id="step4" class="step">
-<h3>Slit Lamp</h3>
-<input id="slitlamp">
-<button onclick="next(5)">Next</button>
-</div>
-
-<!-- STEP 5 -->
-<div id="step5" class="step">
-<h3>Dilation</h3>
-<button onclick="setDil('Dilated')">Dilated</button>
-<button onclick="setDil('Not Dilated')">Not Dilated</button>
-<button onclick="next(6)">Next</button>
-</div>
-
-<!-- STEP 6 -->
-<div id="step6" class="step">
-<h3>Testing</h3>
-<div id="testing"></div>
-<button onclick="analyze()">Generate Plan</button>
-</div>
-
-<pre id="exam_out"></pre>
-
-</div>
-
-<!-- PATIENTS -->
-<div id="patients" class="hidden">
-<button onclick="show('home')">← Back</button>
-<p>Patient system coming next</p>
-</div>
-
-<!-- RESEARCH -->
 <div id="research" class="hidden">
+
 <button onclick="show('home')">← Back</button>
-<p>Drug + disease database coming next</p>
-</div>
+
+<div class="card" onclick="show('meds')">💊 Meds</div>
+<div class="card" onclick="show('diseases')">👁️ Diseases</div>
+<div class="card" onclick="show('oct')">🧠 OCT</div>
 
 </div>
 
-<script>
+<!-- MEDS -->
+<div id="meds" class="hidden">
+<button onclick="show('research')">← Back</button>
+<p>Medication database coming next</p>
+</div>
 
-const API = "https://ophth-ai.onrender.com";
+<!-- DISEASES -->
+<div id="diseases" class="hidden">
+<button onclick="show('research')">← Back</button>
+<p>Disease database coming next</p>
+</div>
 
-// NAV
-function show(page){
- document.querySelectorAll("#home,#ai,#exam,#patients,#research")
- .forEach(p=>p.classList.add("hidden"));
- document.getElementById(page).classList.remove("hidden");
-}
+<!-- OCT -->
+<div id="oct" class="hidden">
 
-// STEP FLOW
-function next(n){
- document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
- document.getElementById("step"+n).classList.add('active');
+<button onclick="show('research')">← Back</button>
 
- if(n===6) runTesting();
-}
+<div class="card" onclick="openLink('atlas')">📊 OCT Atlas</div>
+<div class="card" onclick="openLink('cases')">📁 Cases</div>
+<div class="card" onclick="openLink('articles')">📚 Articles</div>
 
-// TESTING LOGIC
-function runTesting(){
- let t=[];
- if(iop_od.value>22 || iop_os.value>22){
-   t.push("OCT RNFL");
-   t.push("Visual Field");
-   t.push("Pachymetry");
- }
- if(cc.value.includes("blur")) t.push("Macular OCT");
- if(cc.value.includes("floaters")) t.push("Fundus Photo");
-
- testing.innerHTML = t.join("<br>");
- window.tests = t;
-}
-
-// DILATION
-function setDil(v){ window.dil=v; }
-
-// AI MODE
-async function runAI(){
- let res = await fetch(API+"/ai",{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({cc:ai_input.value})
- });
- let data = await res.json();
- ai_out.innerText = data.result;
-}
-
-// EXAM ANALYSIS
-async function analyze(){
-
- let res = await fetch(API+"/ai",{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({
-     cc:cc.value,
-     va_od:va_od.value,
-     va_os:va_os.value,
-     iop_od:iop_od.value,
-     iop_os:iop_os.value,
-     history:slitlamp.value
-   })
- });
-
- let data = await res.json();
-
- exam_out.innerText = `
-S: ${cc.value}
-
-O:
-VA OD ${va_od.value}
-VA OS ${va_os.value}
-IOP OD ${iop_od.value}
-IOP OS ${iop_os.value}
-Slit Lamp: ${slitlamp.value}
-Dilation: ${window.dil}
-
-A:
-${data.result}
-
-P:
-${tests.join(", ")}
-`;
-}
-
-</script>
-
-</body>
-</html>
+</div>
