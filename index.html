@@ -2,39 +2,77 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ophth AI V20</title>
+<title>Mainland Eye AI</title>
+
+<meta name="apple-mobile-web-app-title" content="Mainland Eye AI">
+<meta name="application-name" content="Mainland Eye AI">
+
 <style>
-body { font-family:-apple-system,Arial; margin:0; background:#f2f4f7;}
-.container { padding:12px; }
-input, textarea {
-  width:100%; margin:6px 0; padding:14px;
-  font-size:18px; border-radius:12px; border:1px solid #ccc;
+body {
+  font-family:-apple-system, Arial;
+  margin:0;
+  background:#f2f4f7;
 }
+
+.container {
+  padding:12px;
+}
+
+input {
+  width:100%;
+  margin:6px 0;
+  padding:14px;
+  font-size:18px;
+  border-radius:12px;
+  border:1px solid #ccc;
+}
+
 button {
-  padding:16px; width:100%; margin-top:8px;
-  background:#007AFF; color:white; border:none;
-  border-radius:14px; font-size:18px;
+  padding:16px;
+  width:100%;
+  margin-top:8px;
+  background:#007AFF;
+  color:white;
+  border:none;
+  border-radius:14px;
+  font-size:18px;
 }
+
 .section {
-  background:white; padding:14px; margin-top:10px;
-  border-radius:14px; box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  background:white;
+  padding:14px;
+  margin-top:10px;
+  border-radius:14px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
 }
-h2 { margin:0; padding:12px; background:#007AFF; color:white; }
-pre { white-space:pre-wrap; font-size:15px; }
+
+h2 {
+  margin:0;
+  padding:14px;
+  background:#007AFF;
+  color:white;
+  text-align:center;
+}
+
+pre {
+  white-space:pre-wrap;
+  font-size:15px;
+}
 </style>
 </head>
+
 <body>
 
-<h2>Ophth AI V20</h2>
+<h2>Mainland Eye AI</h2>
 
 <div class="container">
 
 <div class="section">
-<input id="cc" placeholder="Chief Complaint (voice works great)">
+<input id="cc" placeholder="Chief Complaint (tap mic to speak)">
 <input id="va" placeholder="VA (e.g. 20/40)">
 <input id="iop" placeholder="IOP (e.g. 24)">
 
-<button onclick="voice()">🎤 Voice</button>
+<button onclick="voice()">🎤 Voice Input</button>
 <button onclick="analyze()">🧠 Analyze</button>
 <button onclick="upload()">📷 Upload Image</button>
 </div>
@@ -47,7 +85,9 @@ pre { white-space:pre-wrap; font-size:15px; }
 </div>
 
 <script>
-const API = "https://ophth-ai.onrender.com";;
+
+// 🔥 IMPORTANT: Replace with your Render URL
+const API = "https://ophth-ai.onrender.com";
 
 function voice(){
  let R = new(window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -77,6 +117,7 @@ async function upload(){
  input.type = "file";
  input.onchange = async () => {
    let file = input.files[0];
+
    let form = new FormData();
    form.append("image", file);
 
@@ -90,6 +131,7 @@ async function upload(){
  };
  input.click();
 }
+
 </script>
 
 </body>
