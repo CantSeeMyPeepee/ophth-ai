@@ -4,8 +4,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mainland Eye AI</title>
 
-<meta name="apple-mobile-web-app-title" content="Mainland Eye AI">
-
 <style>
 
 body {
@@ -17,7 +15,6 @@ body {
 
 .header {
   background:#1a1d23;
-  color:white;
   padding:16px;
   text-align:center;
   font-weight:600;
@@ -25,18 +22,18 @@ body {
 }
 
 .container {
-  padding:16px;
+  padding:14px;
 }
 
 .card {
   background:#1a1d23;
   border-radius:16px;
-  padding:16px;
+  padding:14px;
   margin-bottom:10px;
   box-shadow:0 2px 10px rgba(0,0,0,0.5);
-  cursor:pointer;
 }
 
+/* INPUTS */
 input {
   width:100%;
   padding:12px;
@@ -51,63 +48,71 @@ input::placeholder {
   color:#6b7280;
 }
 
+/* BUTTONS */
 button {
-  width:100%;
-  padding:14px;
-  margin-top:6px;
+  padding:12px;
   border:none;
-  border-radius:12px;
-  background:#2a2f38;
-  color:white;
-  font-weight:500;
+  border-radius:10px;
+  background:#2f343d; /* 👈 darker gray */
+  color:#ffffff;
+  margin:4px;
+  border:1px solid #3a404b;
+  transition: all 0.15s ease;
 }
 
+/* Hover (desktop) */
 button:hover {
   background:#3a404b;
 }
 
+/* Press effect */
+button:active {
+  background:#454c59;
+  transform:scale(0.98);
+}
+
+/* Back button */
 .back {
-  background:#111318;
-  border:1px solid #2a2f38;
+  background:#1f232a;
 }
 
-.result {
-  padding:10px;
-  border-bottom:1px solid #2a2f38;
+/* Quick buttons */
+.quick {
+  flex:1;
+  min-width:60px;
 }
 
-.alert {
-  background:#2a1a1a;
-  color:#ff6b6b;
-  padding:10px;
-  border-radius:10px;
-  margin-bottom:8px;
-}
-
-.good {
-  background:#1a2a1f;
-  color:#4ade80;
-  padding:10px;
-  border-radius:10px;
-  margin-bottom:8px;
+/* Layout */
+.row {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
 }
 
 .hidden {
   display:none;
 }
 
+/* Alerts */
+.alert {
+  background:#2a1a1a;
+  color:#ff6b6b;
+  padding:8px;
+  border-radius:8px;
+  margin-bottom:6px;
+}
+
+/* Output */
 pre {
-  white-space:pre-wrap;
-  font-size:14px;
   background:#111318;
-  padding:12px;
+  padding:10px;
   border-radius:10px;
   border:1px solid #2a2f38;
 }
 
-.small {
-  font-size:12px;
-  color:#9ca3af;
+.result {
+  padding:10px;
+  border-bottom:1px solid #2a2f38;
 }
 
 </style>
@@ -137,14 +142,51 @@ pre {
 
 <div id="alerts"></div>
 
-<input id="cc" placeholder="Chief Complaint">
-<input id="va" placeholder="VA">
-<input id="iop" placeholder="IOP">
+<!-- CC -->
+<div class="card">
+<div class="row">
+<button class="quick" onclick="setCC('blurred vision')">Blur</button>
+<button class="quick" onclick="setCC('pain')">Pain</button>
+<button class="quick" onclick="setCC('floaters')">Floaters</button>
+<button class="quick" onclick="voice()">🎤</button>
+</div>
 
-<button onclick="analyze()">Analyze + Save Visit</button>
+<input id="cc" placeholder="Chief Complaint">
+</div>
+
+<!-- VA -->
+<div class="card">
+<div class="row">
+<button class="quick" onclick="setVA('20/20')">20/20</button>
+<button class="quick" onclick="setVA('20/30')">20/30</button>
+<button class="quick" onclick="setVA('20/40')">20/40</button>
+<button class="quick" onclick="setVA('20/60')">20/60</button>
+<button class="quick" onclick="setVA('CF')">CF</button>
+</div>
+<input id="va" placeholder="VA">
+</div>
+
+<!-- IOP -->
+<div class="card">
+<div class="row">
+<button class="quick" onclick="setIOP(10)">10</button>
+<button class="quick" onclick="setIOP(15)">15</button>
+<button class="quick" onclick="setIOP(20)">20</button>
+<button class="quick" onclick="setIOP(25)">25</button>
+<button class="quick" onclick="setIOP(30)">30</button>
+</div>
+<input id="iop" placeholder="IOP">
+</div>
+
+<!-- DILATION -->
+<div class="card">
+<button onclick="toggleDilation()">Dilation: <span id="dilStatus">No</span></button>
+</div>
+
+<button onclick="analyze()">🧠 Analyze + Save Visit</button>
 
 <div class="card">
-<div class="small">Visit History</div>
+<b>History</b>
 <div id="history"></div>
 </div>
 
@@ -170,44 +212,11 @@ pre {
 
 <!-- RESEARCH -->
 <div id="research" class="hidden">
-
 <button class="back" onclick="show('home')">← Back</button>
 
-<div class="card" onclick="show('meds')">💊 Meds</div>
-<div class="card" onclick="show('oct')">🧠 OCT Cases</div>
-<div class="card" onclick="show('diseases')">👁️ Ocular Diseases</div>
-
-</div>
-
-<!-- MEDS -->
-<div id="meds" class="hidden">
-
-<button class="back" onclick="show('research')">← Back</button>
-
-<input id="drugSearch" placeholder="Search medications..." oninput="searchDrugs()">
-<div id="drugResults"></div>
-
-</div>
-
-<!-- OCT -->
-<div id="oct" class="hidden">
-
-<button class="back" onclick="show('research')">← Back</button>
-
-<iframe src="https://www.octcases.com" style="width:100%;height:70vh;border:none;border-radius:12px;"></iframe>
-
-<button onclick="window.open('https://www.octcases.com','_blank')">Open Full Site</button>
-
-</div>
-
-<!-- DISEASES -->
-<div id="diseases" class="hidden">
-
-<button class="back" onclick="show('research')">← Back</button>
-
-<input id="diseaseSearch" placeholder="Search diseases..." oninput="searchDiseases()">
-<div id="diseaseResults"></div>
-
+<div class="card">💊 Meds</div>
+<div class="card">🧠 OCT Cases</div>
+<div class="card">👁️ Diseases</div>
 </div>
 
 </div>
@@ -216,16 +225,34 @@ pre {
 
 const API = "https://ophth-ai.onrender.com";
 
+let patients = JSON.parse(localStorage.getItem("patients")||"[]");
+let currentPatient = null;
+let dilated = false;
+
 // NAV
 function show(p){
- document.querySelectorAll("#home,#ai,#patients,#research,#meds,#oct,#diseases")
+ document.querySelectorAll("#home,#ai,#patients,#research")
  .forEach(d=>d.classList.add("hidden"));
  document.getElementById(p).classList.remove("hidden");
 }
 
-// DATA
-let patients = JSON.parse(localStorage.getItem("patients")||"[]");
-let currentPatient = null;
+// QUICK SET
+function setCC(v){ cc.value=v; }
+function setVA(v){ va.value=v; }
+function setIOP(v){ iop.value=v; }
+
+// DILATION
+function toggleDilation(){
+ dilated = !dilated;
+ dilStatus.innerText = dilated ? "Yes" : "No";
+}
+
+// VOICE
+function voice(){
+ let R=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
+ R.onresult=e=>cc.value=e.results[0][0].transcript;
+ R.start();
+}
 
 // SAVE PATIENT
 function savePatient(){
@@ -239,11 +266,10 @@ function searchPatients(){
  let q=search.value.toLowerCase();
  results.innerHTML="";
  patients.forEach(p=>{
-   let txt=`${p.last} ${p.first}`.toLowerCase();
-   if(txt.includes(q)){
+   if((p.last+p.first).toLowerCase().includes(q)){
      let d=document.createElement("div");
      d.className="result";
-     d.innerText=`${p.last}, ${p.first}`;
+     d.innerText=p.last+", "+p.first;
      d.onclick=()=>selectPatient(p);
      results.appendChild(d);
    }
@@ -253,23 +279,10 @@ function searchPatients(){
 // SELECT
 function selectPatient(p){
  currentPatient=p;
- localStorage.setItem("currentPatient", JSON.stringify(p));
- patientHeader.innerText=`${p.last}, ${p.first}`;
+ patientHeader.innerText=p.last+", "+p.first;
  show('ai');
  renderHistory();
- analyzeTrends();
 }
-
-// LOAD LAST
-window.onload=()=>{
- let p=JSON.parse(localStorage.getItem("currentPatient"));
- if(p){
-   currentPatient=p;
-   patientHeader.innerText=`${p.last}, ${p.first}`;
-   renderHistory();
-   analyzeTrends();
- }
-};
 
 // HISTORY
 function renderHistory(){
@@ -283,30 +296,19 @@ function renderHistory(){
  });
 }
 
-// ALERTS
-function analyzeTrends(){
- alerts.innerHTML="";
- if(!currentPatient || currentPatient.visits.length<2) return;
-
- let v=currentPatient.visits;
- let last=v[v.length-1];
- let prev=v[v.length-2];
-
- if(parseInt(last.iop)>parseInt(prev.iop)){
-   alerts.innerHTML+=`<div class="alert">⚠️ IOP Rising</div>`;
- }
-
- if(last.va>prev.va){
-   alerts.innerHTML+=`<div class="alert">⚠️ Vision Declining</div>`;
- }
-}
-
-// AI
+// ANALYZE
 async function analyze(){
 
  let today=new Date().toLocaleDateString();
 
- let visit={date:today,cc:cc.value,va:va.value,iop:iop.value};
+ let visit={
+   date:today,
+   cc:cc.value,
+   va:va.value,
+   iop:iop.value,
+   dilated:dilated
+ };
+
  currentPatient.visits.push(visit);
 
  let i=patients.findIndex(p=>p.last===currentPatient.last && p.first===currentPatient.first);
@@ -314,28 +316,27 @@ async function analyze(){
  localStorage.setItem("patients", JSON.stringify(patients));
 
  renderHistory();
- analyzeTrends();
 
  let historyText=currentPatient.visits.map(v=>`${v.date}: VA ${v.va}, IOP ${v.iop}`).join("\\n");
 
- let res=await fetch(API+"/ai",{method:"POST",headers:{"Content-Type":"application/json"},
- body:JSON.stringify({cc:cc.value,va:va.value,iop:iop.value,history:historyText})});
+ let res=await fetch(API+"/ai",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+     cc:cc.value,
+     va:va.value,
+     iop:iop.value,
+     dilated:dilated,
+     history:historyText
+   })
+ });
 
  let data=await res.json();
 
- out.innerText="History:\\n"+historyText+"\\n----------------\\n"+data.result;
-}
-
-// DRUG SEARCH (basic)
-function searchDrugs(){
- let q=drugSearch.value.toLowerCase();
- drugResults.innerHTML="";
-}
-
-// DISEASE SEARCH (basic)
-function searchDiseases(){
- let q=diseaseSearch.value.toLowerCase();
- diseaseResults.innerHTML="";
+ out.innerText=
+ "History:\\n"+historyText+
+ "\\n----------------\\n"+
+ data.result;
 }
 
 </script>
