@@ -4,8 +4,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mainland Eye AI</title>
 
+<!-- ✅ PWA CONFIG -->
+<link rel="manifest" href="/manifest.json">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mainland Eye">
+
+<link rel="apple-touch-icon" href="/icon.png">
+
 <style>
-body { font-family:-apple-system; margin:0; background:#0f1115; color:#e5e7eb; }
+
+body {
+  font-family:-apple-system;
+  margin:0;
+  background:#0f1115;
+  color:#e5e7eb;
+}
 
 .header {
   background:#1a1d23;
@@ -24,7 +39,7 @@ body { font-family:-apple-system; margin:0; background:#0f1115; color:#e5e7eb; }
   box-shadow:0 2px 10px rgba(0,0,0,0.5);
 }
 
-/* INPUTS */
+/* INPUT */
 input {
   width:100%;
   padding:12px;
@@ -55,12 +70,17 @@ button:active {
 
 .back { background:#1f232a; }
 
-/* LAYOUT */
-.row { display:flex; flex-wrap:wrap; gap:6px; }
+.row {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
 .quick { flex:1; min-width:60px; }
+
 .hidden { display:none; }
 
-/* ALERT COLORS */
+/* ALERTS */
 .alert-red {
   background:#3a1a1a;
   color:#ff6b6b;
@@ -88,17 +108,16 @@ button:active {
   border-left:4px solid #22c55e;
 }
 
-/* OUTPUT */
+.result {
+  padding:10px;
+  border-bottom:1px solid #2a2f38;
+}
+
 pre {
   background:#111318;
   padding:10px;
   border-radius:10px;
   border:1px solid #2a2f38;
-}
-
-.result {
-  padding:10px;
-  border-bottom:1px solid #2a2f38;
 }
 
 </style>
@@ -209,6 +228,13 @@ pre {
 
 <script>
 
+// INSTALL PROMPT (simple)
+window.onload = () => {
+  setTimeout(() => {
+    alert("📲 Tip: Tap Share → Add to Home Screen to install Mainland Eye AI");
+  }, 2000);
+};
+
 const API = "https://ophth-ai.onrender.com";
 
 let patients = JSON.parse(localStorage.getItem("patients")||"[]");
@@ -229,8 +255,8 @@ function setIOP(v){ iop.value=v; }
 
 // DILATION
 function toggleDilation(){
- dilated = !dilated;
- dilStatus.innerText = dilated ? "Yes" : "No";
+ dilated=!dilated;
+ dilStatus.innerText=dilated?"Yes":"No";
 }
 
 // VOICE
@@ -240,7 +266,7 @@ function voice(){
  R.start();
 }
 
-// SAVE PATIENT
+// SAVE
 function savePatient(){
  let p={last:last.value,first:first.value,dob:dob.value,visits:[]};
  patients.push(p);
@@ -283,58 +309,41 @@ function renderHistory(){
  });
 }
 
-// SMART ALERTS
+// ALERTS
 function analyzeTrends(){
-
  alerts.innerHTML="";
-
  if(!currentPatient || currentPatient.visits.length<2) return;
 
  let v=currentPatient.visits;
  let last=v[v.length-1];
  let prev=v[v.length-2];
 
- let iopRise = parseInt(last.iop) - parseInt(prev.iop);
+ let iopRise=parseInt(last.iop)-parseInt(prev.iop);
 
- // RED = dangerous
- if(last.iop >= 30){
-   alerts.innerHTML += `<div class="alert-red">🔴 High IOP — possible glaucoma risk</div>`;
+ if(last.iop>=30){
+   alerts.innerHTML+=`<div class="alert-red">🔴 High IOP</div>`;
+ } else if(iopRise>3){
+   alerts.innerHTML+=`<div class="alert-yellow">🟡 IOP Rising</div>`;
+ } else {
+   alerts.innerHTML+=`<div class="alert-green">🟢 Stable</div>`;
  }
 
- // YELLOW = trending worse
- else if(iopRise > 3){
-   alerts.innerHTML += `<div class="alert-yellow">🟡 IOP increasing</div>`;
+ if(last.va>prev.va){
+   alerts.innerHTML+=`<div class="alert-yellow">🟡 Vision Declining</div>`;
  }
-
- // GREEN = stable
- else {
-   alerts.innerHTML += `<div class="alert-green">🟢 IOP stable</div>`;
- }
-
- // VA worsening
- if(last.va > prev.va){
-   alerts.innerHTML += `<div class="alert-yellow">🟡 Vision declining</div>`;
- }
-
 }
 
-// ANALYZE
+// AI
 async function analyze(){
 
  let today=new Date().toLocaleDateString();
 
- let visit={
-   date:today,
-   cc:cc.value,
-   va:va.value,
-   iop:iop.value,
-   dilated:dilated
- };
-
+ let visit={date:today,cc:cc.value,va:va.value,iop:iop.value};
  currentPatient.visits.push(visit);
 
  let i=patients.findIndex(p=>p.last===currentPatient.last && p.first===currentPatient.first);
  patients[i]=currentPatient;
+
  localStorage.setItem("patients", JSON.stringify(patients));
 
  renderHistory();
@@ -345,20 +354,12 @@ async function analyze(){
  let res=await fetch(API+"/ai",{
    method:"POST",
    headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({
-     cc:cc.value,
-     va:va.value,
-     iop:iop.value,
-     history:historyText
-   })
+   body:JSON.stringify({cc:cc.value,va:va.value,iop:iop.value,history:historyText})
  });
 
  let data=await res.json();
 
- out.innerText=
- "History:\\n"+historyText+
- "\\n----------------\\n"+
- data.result;
+ out.innerText="History:\\n"+historyText+"\\n----------------\\n"+data.result;
 }
 
 </script>
