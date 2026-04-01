@@ -5,17 +5,11 @@
 <title>Mainland Eye AI</title>
 
 <link rel="manifest" href="/manifest.json">
-
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Mainland Eye">
-
 <link rel="apple-touch-icon" href="/icon.png">
 
 <style>
 body { font-family:-apple-system; margin:0; background:#0f1115; color:#e5e7eb; }
-
-.header { background:#1a1d23; padding:16px; text-align:center; border-bottom:1px solid #2a2f38; }
+.header { background:#1a1d23; padding:16px; text-align:center; }
 .container { padding:14px; }
 
 .card {
@@ -23,148 +17,123 @@ body { font-family:-apple-system; margin:0; background:#0f1115; color:#e5e7eb; }
   border-radius:16px;
   padding:14px;
   margin-bottom:10px;
-  box-shadow:0 2px 10px rgba(0,0,0,0.5);
-}
-
-button {
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  background:#2f343d;
-  color:white;
-  margin:4px;
-  border:1px solid #3a404b;
 }
 
 input {
   width:100%;
   padding:12px;
-  border-radius:10px;
-  border:1px solid #2a2f38;
   margin:6px 0;
+  border-radius:10px;
   background:#111318;
-  color:#e5e7eb;
+  color:white;
+  border:1px solid #2a2f38;
 }
 
-.hidden { display:none; }
+button {
+  padding:10px;
+  border-radius:10px;
+  background:#2f343d;
+  color:white;
+  border:1px solid #3a404b;
+  margin:4px;
+}
+
+.row { display:flex; flex-wrap:wrap; gap:6px; }
+.quick { flex:1; }
 
 pre {
   background:#111318;
   padding:10px;
   border-radius:10px;
 }
-
-#splash {
-  position:fixed;
-  width:100%;
-  height:100%;
-  background:#0f1115;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-  z-index:9999;
-}
-
-.splash-logo { width:100px; border-radius:20px; }
-
-.install-banner {
-  position:fixed;
-  bottom:20px;
-  left:50%;
-  transform:translateX(-50%);
-  width:90%;
-  background:#1a1d23;
-  padding:12px;
-  border-radius:16px;
-  display:none;
-}
-
 </style>
 </head>
 
 <body>
 
-<!-- SPLASH -->
-<div id="splash">
-  <img src="/icon.png" class="splash-logo">
-  <div>Mainland Eye AI</div>
-</div>
-
 <div class="header">Mainland Eye AI</div>
 
 <div class="container">
 
-<!-- HOME -->
-<div id="home">
-<div class="card" onclick="show('ai')">🧠 AI Mode</div>
-<div class="card" onclick="show('patients')">👤 Patient Lookup</div>
-<div class="card" onclick="show('research')">🔬 Research</div>
+<!-- CC -->
+<div class="card">
+<div class="row">
+<button class="quick" onclick="setCC('blurred vision')">Blur</button>
+<button class="quick" onclick="setCC('pain')">Pain</button>
+<button class="quick" onclick="setCC('floaters')">Floaters</button>
+</div>
+<input id="cc" placeholder="Chief Complaint">
 </div>
 
-<!-- AI -->
-<div id="ai" class="hidden">
-<button onclick="show('home')">← Back</button>
+<!-- VA -->
+<div class="card">
+<b>Visual Acuity</b>
 
-<input id="cc" placeholder="Chief Complaint">
-<input id="va" placeholder="VA">
-<input id="iop" placeholder="IOP">
+<div class="row">
+<button onclick="setVA('od','20/20')">OD 20/20</button>
+<button onclick="setVA('od','20/40')">OD 20/40</button>
+<button onclick="setVA('os','20/20')">OS 20/20</button>
+<button onclick="setVA('os','20/40')">OS 20/40</button>
+</div>
+
+<input id="va_od" placeholder="VA OD">
+<input id="va_os" placeholder="VA OS">
+</div>
+
+<!-- IOP -->
+<div class="card">
+<b>IOP</b>
+
+<div class="row">
+<button onclick="setIOP('od',15)">OD 15</button>
+<button onclick="setIOP('od',25)">OD 25</button>
+<button onclick="setIOP('os',15)">OS 15</button>
+<button onclick="setIOP('os',25)">OS 25</button>
+</div>
+
+<input id="iop_od" placeholder="IOP OD">
+<input id="iop_os" placeholder="IOP OS">
+</div>
 
 <button onclick="analyze()">Analyze</button>
 
 <pre id="out"></pre>
-</div>
 
-</div>
-
-<div id="installBanner" class="install-banner">
-Install → Share → Add to Home Screen
 </div>
 
 <script>
 
-// SPLASH
-window.onload = () => {
-  setTimeout(()=> splash.style.display="none", 1000);
-};
+const API = "https://ophth-ai.onrender.com";
 
-// INSTALL PROMPT
-function isIphone(){ return /iphone/i.test(navigator.userAgent); }
-function isSafari(){ return /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent); }
-function isStandalone(){ return window.navigator.standalone === true; }
-
-setTimeout(()=>{
- if(isIphone() && isSafari() && !isStandalone()){
-   installBanner.style.display="block";
- }
-},2000);
-
-// NAV
-function show(p){
- document.querySelectorAll("#home,#ai")
- .forEach(d=>d.classList.add("hidden"));
- document.getElementById(p).classList.remove("hidden");
+// SETTERS
+function setCC(v){ cc.value = v; }
+function setVA(eye, val){
+  if(eye === "od") va_od.value = val;
+  else va_os.value = val;
+}
+function setIOP(eye, val){
+  if(eye === "od") iop_od.value = val;
+  else iop_os.value = val;
 }
 
-// AI
+// AI CALL
 async function analyze(){
- let res=await fetch("https://ophth-ai.onrender.com/ai",{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({
-     cc:cc.value,
-     va:va.value,
-     iop:iop.value
-   })
- });
- let data=await res.json();
- out.innerText=data.result;
-}
 
-// 🔥 SERVICE WORKER REGISTER
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js')
-  .then(() => console.log("SW Registered"));
+  let res = await fetch(API + "/ai", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      cc: cc.value,
+      va_od: va_od.value,
+      va_os: va_os.value,
+      iop_od: iop_od.value,
+      iop_os: iop_os.value
+    })
+  });
+
+  let data = await res.json();
+
+  out.innerText = data.result;
 }
 
 </script>
