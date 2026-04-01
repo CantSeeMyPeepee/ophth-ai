@@ -4,34 +4,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mainland Eye AI</title>
 
-<meta name="apple-mobile-web-app-title" content="Mainland Eye AI">
-
 <style>
 body { font-family:-apple-system; margin:0; background:#f5f7fa; }
-
-.header {
-  background:#0a84ff;
-  color:white;
-  padding:16px;
-  text-align:center;
-  font-weight:600;
-}
-
+.header { background:#0a84ff; color:white; padding:16px; text-align:center; font-weight:600; }
 .container { padding:16px; }
 
 .card {
   background:white;
   border-radius:16px;
-  padding:18px;
-  margin-bottom:12px;
-  text-align:center;
-  font-size:18px;
-  font-weight:600;
+  padding:16px;
+  margin-bottom:10px;
   box-shadow:0 2px 8px rgba(0,0,0,0.08);
-  cursor:pointer;
 }
-
-.hidden { display:none; }
 
 input {
   width:100%;
@@ -44,7 +28,7 @@ input {
 button {
   width:100%;
   padding:14px;
-  margin-top:8px;
+  margin-top:6px;
   border:none;
   border-radius:12px;
   background:#0a84ff;
@@ -54,19 +38,27 @@ button {
 .back { background:#e5e7eb; color:black; }
 
 .result {
-  padding:12px;
+  padding:10px;
   border-bottom:1px solid #eee;
-  line-height:1.4;
 }
 
-.small { font-size:12px; color:#666; }
-
-iframe {
-  width:100%;
-  height:70vh;
-  border:none;
-  border-radius:12px;
+.alert {
+  background:#ffe5e5;
+  color:#b30000;
+  padding:10px;
+  border-radius:10px;
+  margin-bottom:8px;
+  font-size:14px;
 }
+
+.good {
+  background:#e6f7ff;
+  padding:10px;
+  border-radius:10px;
+  margin-bottom:8px;
+}
+
+.hidden { display:none; }
 
 pre { white-space:pre-wrap; font-size:14px; }
 </style>
@@ -85,23 +77,25 @@ pre { white-space:pre-wrap; font-size:14px; }
 <div class="card" onclick="show('research')">🔬 Research</div>
 </div>
 
-<!-- AI MODE -->
+<!-- AI -->
 <div id="ai" class="hidden">
 
 <button class="back" onclick="show('home')">← Back</button>
 
 <div class="card">
-<b id="patientHeader">No patient selected</b>
+<b id="patientHeader">No patient</b>
 </div>
 
+<div id="alerts"></div>
+
 <input id="cc" placeholder="Chief Complaint">
-<input id="va" placeholder="VA">
+<input id="va" placeholder="VA (e.g. 20/40)">
 <input id="iop" placeholder="IOP">
 
 <button onclick="analyze()">Analyze + Save Visit</button>
 
 <div class="card">
-<div class="small">Visit History</div>
+<b>Visit History</b>
 <div id="history"></div>
 </div>
 
@@ -114,56 +108,24 @@ pre { white-space:pre-wrap; font-size:14px; }
 
 <button class="back" onclick="show('home')">← Back</button>
 
-<input id="search" placeholder="Search patient..." oninput="searchPatients()">
+<input id="search" placeholder="Search..." oninput="searchPatients()">
 <div id="results"></div>
 
 <input id="last" placeholder="Last">
 <input id="first" placeholder="First">
 <input id="dob" placeholder="DOB">
 
-<button onclick="savePatient()">Save Patient</button>
+<button onclick="savePatient()">Save</button>
 
 </div>
 
-<!-- RESEARCH MENU -->
+<!-- RESEARCH -->
 <div id="research" class="hidden">
-
 <button class="back" onclick="show('home')">← Back</button>
 
-<div class="card" onclick="show('meds')">💊 Meds</div>
-<div class="card" onclick="show('oct')">🧠 OCT Cases</div>
-<div class="card" onclick="show('diseases')">👁️ Ocular Diseases</div>
-
-</div>
-
-<!-- MEDS -->
-<div id="meds" class="hidden">
-<button class="back" onclick="show('research')">← Back</button>
-
-<input id="drugSearch" placeholder="Search meds..." oninput="searchDrugs()">
-<div id="drugResults"></div>
-
-</div>
-
-<!-- OCT -->
-<div id="oct" class="hidden">
-<button class="back" onclick="show('research')">← Back</button>
-
-<iframe src="https://www.octcases.com"></iframe>
-
-<button onclick="window.open('https://www.octcases.com','_blank')">
-Open OCTCases
-</button>
-
-</div>
-
-<!-- DISEASES -->
-<div id="diseases" class="hidden">
-<button class="back" onclick="show('research')">← Back</button>
-
-<input id="diseaseSearch" placeholder="Search diseases..." oninput="searchDiseases()">
-<div id="diseaseResults"></div>
-
+<div class="card">💊 Meds</div>
+<div class="card">🧠 OCT Cases</div>
+<div class="card">👁️ Diseases</div>
 </div>
 
 </div>
@@ -174,27 +136,29 @@ const API = "https://ophth-ai.onrender.com";
 
 // NAV
 function show(p){
- document.querySelectorAll("#home,#ai,#patients,#research,#meds,#oct,#diseases")
+ document.querySelectorAll("#home,#ai,#patients,#research")
  .forEach(d=>d.classList.add("hidden"));
  document.getElementById(p).classList.remove("hidden");
 }
 
-// ================= PATIENT SYSTEM =================
+// DATA
 let patients = JSON.parse(localStorage.getItem("patients")||"[]");
 let currentPatient = null;
 
+// SAVE PATIENT
 function savePatient(){
  let p = {last:last.value, first:first.value, dob:dob.value, visits:[]};
  patients.push(p);
  localStorage.setItem("patients", JSON.stringify(patients));
 }
 
+// SEARCH
 function searchPatients(){
  let q = search.value.toLowerCase();
  results.innerHTML="";
  patients.forEach(p=>{
-   let t = `${p.last} ${p.first}`.toLowerCase();
-   if(t.includes(q)){
+   let txt = `${p.last} ${p.first}`.toLowerCase();
+   if(txt.includes(q)){
      let d=document.createElement("div");
      d.className="result";
      d.innerText=`${p.last}, ${p.first}`;
@@ -204,96 +168,101 @@ function searchPatients(){
  });
 }
 
+// SELECT
 function selectPatient(p){
  currentPatient=p;
  localStorage.setItem("currentPatient", JSON.stringify(p));
- patientHeader.innerText=`${p.last}, ${p.first} DOB:${p.dob}`;
+ patientHeader.innerText=`${p.last}, ${p.first}`;
  show('ai');
  renderHistory();
+ analyzeTrends();
 }
 
+// LOAD LAST
 window.onload = ()=>{
  let p=JSON.parse(localStorage.getItem("currentPatient"));
  if(p){
    currentPatient=p;
-   patientHeader.innerText=`${p.last}, ${p.first} DOB:${p.dob}`;
+   patientHeader.innerText=`${p.last}, ${p.first}`;
    renderHistory();
+   analyzeTrends();
  }
 };
 
-// VISITS
+// HISTORY
 function renderHistory(){
  history.innerHTML="";
  if(!currentPatient) return;
+
  currentPatient.visits.slice().reverse().forEach(v=>{
    let d=document.createElement("div");
    d.className="result";
-   d.innerText=`${v.date} | IOP ${v.iop}`;
+   d.innerText=`${v.date} | VA ${v.va} | IOP ${v.iop}`;
    history.appendChild(d);
  });
 }
 
+// TREND ANALYSIS
+function analyzeTrends(){
+ alerts.innerHTML="";
+
+ if(!currentPatient || currentPatient.visits.length < 2) return;
+
+ let visits = currentPatient.visits;
+ let last = visits[visits.length-1];
+ let prev = visits[visits.length-2];
+
+ // IOP trend
+ if(parseInt(last.iop) > parseInt(prev.iop)){
+   alerts.innerHTML += `<div class="alert">⚠️ IOP rising</div>`;
+ }
+
+ // VA decline
+ if(last.va > prev.va){
+   alerts.innerHTML += `<div class="alert">⚠️ Vision worsening</div>`;
+ }
+}
+
 // AI
 async function analyze(){
- let today=new Date().toLocaleDateString();
- let visit={date:today,cc:cc.value,va:va.value,iop:iop.value};
+
+ let today = new Date().toLocaleDateString();
+
+ let visit = {
+   date: today,
+   cc: cc.value,
+   va: va.value,
+   iop: iop.value
+ };
+
  currentPatient.visits.push(visit);
 
- let i=patients.findIndex(p=>p.last===currentPatient.last && p.first===currentPatient.first);
+ let i = patients.findIndex(p=>p.last===currentPatient.last && p.first===currentPatient.first);
  patients[i]=currentPatient;
  localStorage.setItem("patients", JSON.stringify(patients));
 
  renderHistory();
+ analyzeTrends();
 
- let res=await fetch(API+"/ai",{method:"POST",headers:{"Content-Type":"application/json"},
- body:JSON.stringify({cc:cc.value,va:va.value,iop:iop.value})});
- let data=await res.json();
- out.innerText=data.result;
-}
+ let historyText = currentPatient.visits.map(v=>`${v.date}: VA ${v.va}, IOP ${v.iop}`).join("\\n");
 
-// ================= DRUGS =================
-const drugs = [
-{name:"Latanoprost",use:"Glaucoma",dosing:"1 drop nightly",contra:"Hypersensitivity"},
-{name:"Timolol",use:"Glaucoma",dosing:"BID",contra:"Asthma, bradycardia"},
-{name:"Prednisolone",use:"Inflammation",dosing:"Frequent then taper",contra:"HSV keratitis"},
-{name:"Moxifloxacin",use:"Infection",dosing:"TID x7 days",contra:"Quinolone allergy"},
-{name:"Erythromycin",use:"Lid infection",dosing:"Ointment up to 6x/day",contra:"Allergy"},
-{name:"Atropine",use:"Cycloplegia",dosing:"Per case",contra:"Angle closure risk"}
-];
-
-function searchDrugs(){
- let q=drugSearch.value.toLowerCase();
- drugResults.innerHTML="";
- drugs.forEach(d=>{
-   if(d.name.toLowerCase().includes(q)){
-     let div=document.createElement("div");
-     div.className="result";
-     div.innerHTML=`<b>${d.name}</b><br>${d.use}<br>Dose: ${d.dosing}<br>Contra: ${d.contra}`;
-     drugResults.appendChild(div);
-   }
+ let res = await fetch(API + "/ai", {
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body: JSON.stringify({
+     cc: cc.value,
+     va: va.value,
+     iop: iop.value,
+     history: historyText
+   })
  });
-}
 
-// ================= DISEASES =================
-const diseases=[
-{name:"AMD Wet",symptoms:"Distortion, blur",oct:"SRF/IRF",plan:"Anti-VEGF",urgency:"Urgent"},
-{name:"AMD Dry",symptoms:"Gradual blur",oct:"Drusen",plan:"Monitor + AREDS",urgency:"Routine"},
-{name:"DME",symptoms:"Blur",oct:"Intraretinal fluid",plan:"Retina referral",urgency:"Urgent"},
-{name:"RD",symptoms:"Flashes curtain",oct:"Not primary",plan:"Emergency",urgency:"Emergent"},
-{name:"CRAO",symptoms:"Sudden vision loss",oct:"Inner retina",plan:"Stroke workup",urgency:"Emergent"}
-];
+ let data = await res.json();
 
-function searchDiseases(){
- let q=diseaseSearch.value.toLowerCase();
- diseaseResults.innerHTML="";
- diseases.forEach(d=>{
-   if(d.name.toLowerCase().includes(q)){
-     let div=document.createElement("div");
-     div.className="result";
-     div.innerHTML=`<b>${d.name}</b><br>${d.symptoms}<br>OCT: ${d.oct}<br>Plan: ${d.plan}<br>Urgency: ${d.urgency}`;
-     diseaseResults.appendChild(div);
-   }
- });
+ out.innerText =
+ "History:\n" + historyText +
+ "\n----------------\n" +
+ data.result;
 }
 
 </script>
