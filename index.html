@@ -7,32 +7,63 @@
 <meta name="apple-mobile-web-app-title" content="Mainland Eye AI">
 
 <style>
-body { font-family:-apple-system, Arial; margin:0; background:#f2f4f7; }
-.container { padding:12px; }
-
-input {
-  width:100%; margin:6px 0; padding:14px;
-  font-size:18px; border-radius:12px; border:1px solid #ccc;
+body {
+  font-family:-apple-system, Arial;
+  margin:0;
+  background:#f5f7fa;
 }
 
-.row { display:flex; gap:6px; }
+.header {
+  background:#0a84ff;
+  color:white;
+  padding:16px;
+  text-align:center;
+  font-size:20px;
+  font-weight:600;
+}
+
+.container {
+  padding:12px;
+}
+
+.card {
+  background:white;
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.06);
+}
+
+input {
+  width:100%;
+  padding:12px;
+  margin:4px 0;
+  border-radius:10px;
+  border:1px solid #ddd;
+  font-size:16px;
+}
+
+.row {
+  display:flex;
+  gap:6px;
+}
 .row input { flex:1; }
 
 button {
-  padding:16px; width:100%; margin-top:8px;
-  background:#007AFF; color:white; border:none;
-  border-radius:14px; font-size:18px;
+  width:100%;
+  padding:14px;
+  margin-top:6px;
+  border:none;
+  border-radius:12px;
+  background:#0a84ff;
+  color:white;
+  font-size:16px;
+  font-weight:600;
 }
 
-.section {
-  background:white; padding:14px; margin-top:10px;
-  border-radius:14px; box-shadow:0 2px 6px rgba(0,0,0,0.08);
-}
-
-h2 {
-  margin:0; padding:14px;
-  background:#007AFF; color:white;
-  text-align:center;
+.secondary {
+  background:#e5e7eb;
+  color:black;
 }
 
 .result {
@@ -42,30 +73,38 @@ h2 {
 }
 
 .result:hover {
-  background:#f0f7ff;
+  background:#eef6ff;
 }
 
-pre { white-space:pre-wrap; }
+pre {
+  white-space:pre-wrap;
+  font-size:14px;
+}
+
+.small {
+  font-size:12px;
+  color:#666;
+}
 </style>
 </head>
 
 <body>
 
-<h2>Mainland Eye AI</h2>
+<div class="header">Mainland Eye AI</div>
 
 <div class="container">
 
 <!-- 🔍 SEARCH -->
-<div class="section">
-<input id="search" placeholder="Search patient (name, phone, address)" oninput="searchPatients()">
+<div class="card">
+<input id="search" placeholder="Search patient..." oninput="searchPatients()">
 <div id="results"></div>
 </div>
 
-<!-- 🧾 PATIENT INFO -->
-<div class="section">
+<!-- 🧾 PATIENT -->
+<div class="card">
 <div class="row">
-<input id="last" placeholder="Last Name">
-<input id="first" placeholder="First Name">
+<input id="last" placeholder="Last">
+<input id="first" placeholder="First">
 <input id="mi" placeholder="MI">
 </div>
 
@@ -77,21 +116,33 @@ pre { white-space:pre-wrap; }
 <input id="email" placeholder="Email">
 </div>
 
-<button onclick="savePatient()">💾 Save Patient</button>
+<div class="row">
+<button onclick="savePatient()">Save</button>
+<button class="secondary" onclick="clearPatient()">New</button>
+</div>
 </div>
 
 <!-- 👁️ CLINICAL -->
-<div class="section">
+<div class="card">
+<div class="row">
 <input id="cc" placeholder="Chief Complaint">
+<button onclick="voice()">🎤</button>
+</div>
+
+<div class="row">
 <input id="va" placeholder="VA">
 <input id="iop" placeholder="IOP">
+</div>
 
-<button onclick="voice()">🎤 Voice</button>
-<button onclick="analyze()">🧠 Analyze</button>
+<div class="row">
+<button onclick="analyze()">Analyze</button>
+<button class="secondary" onclick="copyNote()">Copy</button>
+</div>
 </div>
 
 <!-- OUTPUT -->
-<div class="section">
+<div class="card">
+<div class="small">Clinical Output</div>
 <pre id="out">Ready</pre>
 </div>
 
@@ -101,31 +152,45 @@ pre { white-space:pre-wrap; }
 
 const API = "https://ophth-ai.onrender.com";
 
-// 🧠 LOCAL DATABASE
+// ===== DATABASE =====
 let patients = JSON.parse(localStorage.getItem("patients") || "[]");
 
-// SAVE PATIENT
+// ===== SAVE / UPDATE =====
 function savePatient(){
- let p = {
-   last: last.value,
-   first: first.value,
-   mi: mi.value,
-   dob: dob.value,
-   address: address.value,
-   phone: phone.value,
-   email: email.value
+ let existingIndex = patients.findIndex(p =>
+   p.last === last.value &&
+   p.first === first.value &&
+   p.dob === dob.value
+ );
+
+ let patient = {
+   last:last.value,
+   first:first.value,
+   mi:mi.value,
+   dob:dob.value,
+   address:address.value,
+   phone:phone.value,
+   email:email.value
  };
 
- patients.push(p);
+ if(existingIndex >= 0){
+   patients[existingIndex] = patient;
+ } else {
+   patients.push(patient);
+ }
+
  localStorage.setItem("patients", JSON.stringify(patients));
- alert("Patient saved");
 }
 
-// SEARCH
+// ===== CLEAR =====
+function clearPatient(){
+ document.querySelectorAll("input").forEach(i=>i.value="");
+}
+
+// ===== SEARCH =====
 function searchPatients(){
  let q = search.value.toLowerCase();
- let resultsDiv = document.getElementById("results");
- resultsDiv.innerHTML = "";
+ results.innerHTML = "";
 
  patients.forEach(p=>{
    let text = `${p.last} ${p.first} ${p.phone} ${p.address}`.toLowerCase();
@@ -136,12 +201,12 @@ function searchPatients(){
      div.innerText = `${p.last}, ${p.first} (${p.phone})`;
 
      div.onclick = ()=>loadPatient(p);
-     resultsDiv.appendChild(div);
+     results.appendChild(div);
    }
  });
 }
 
-// LOAD PATIENT
+// ===== LOAD =====
 function loadPatient(p){
  last.value = p.last;
  first.value = p.first;
@@ -152,7 +217,7 @@ function loadPatient(p){
  email.value = p.email;
 }
 
-// VOICE
+// ===== VOICE =====
 function voice(){
  let R = new(window.SpeechRecognition || window.webkitSpeechRecognition)();
  R.onresult = e => {
@@ -161,7 +226,7 @@ function voice(){
  R.start();
 }
 
-// ANALYZE
+// ===== ANALYZE =====
 async function analyze(){
 
  let patientInfo = `
@@ -183,7 +248,16 @@ Phone: ${phone.value}
 
  let data = await res.json();
 
- out.innerText = patientInfo + "\n\n" + data.result;
+ out.innerText =
+ patientInfo +
+ "\n-------------------\n" +
+ data.result;
+}
+
+// ===== COPY =====
+function copyNote(){
+ navigator.clipboard.writeText(out.innerText);
+ alert("Copied");
 }
 
 </script>
